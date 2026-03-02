@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ExamPro – Shobhit University Gangoh</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { font-family:'Inter',sans-serif; box-sizing:border-box; margin:0; padding:0; }
+  body { min-height:100vh; overflow-x:hidden; background:#04081a; }
+
+  /* ── Background ───────────────────────────────────── */
+  #bg-gradient {
+    position:fixed; inset:0; z-index:0;
+    background:linear-gradient(135deg,
+      #04142a 0%, #080820 40%, #2a0808 70%, #04142a 100%);
+    background-size:400% 400%;
+    animation:gradShift 12s ease infinite;
+  }
+  @keyframes gradShift {
+    0%   { background-position:0% 50%; }
+    50%  { background-position:100% 50%; }
+    100% { background-position:0% 50%; }
+  }
+  #bg-img {
+    position:fixed; inset:0; z-index:1;
+    background-size:cover; background-position:center;
+    opacity:0; transition:opacity 1s ease;
+  }
+  #bg-overlay {
+    position:fixed; inset:0; z-index:2;
+    background:linear-gradient(135deg,
+      rgba(4,15,50,0.80) 0%,
+      rgba(8,8,30,0.78) 45%,
+      rgba(80,10,10,0.75) 100%);
+  }
+
+  /* ── Particles ─────────────────────────────────────── */
+  .particle {
+    position:fixed; border-radius:50%;
+    background:rgba(255,255,255,0.03);
+    animation:floatUp linear infinite;
+    pointer-events:none; z-index:3;
+  }
+  @keyframes floatUp {
+    0%   { transform:translateY(105vh) rotate(0deg);  opacity:0; }
+    8%   { opacity:1; }
+    92%  { opacity:0.8; }
+    100% { transform:translateY(-5vh) rotate(720deg); opacity:0; }
+  }
+
+  /* ── Top bar ────────────────────────────────────────── */
+  .uni-topbar {
+    position:fixed; top:0; left:0; right:0; z-index:200;
+    background:rgba(4,20,55,0.97);
+    border-bottom:2px solid rgba(185,28,28,0.5);
+    backdrop-filter:blur(20px);
+  }
+
+  /* ── Login card ─────────────────────────────────────── */
+  .login-card {
+    background:rgba(8,12,35,0.82);
+    border:1px solid rgba(255,255,255,0.13);
+    backdrop-filter:blur(28px);
+    box-shadow:0 32px 80px rgba(0,0,0,0.7),
+               0 0 0 1px rgba(255,255,255,0.05) inset;
+  }
+
+  /* ── Left banner box ─────────────────────────────────── */
+  .sug-banner-wrap {
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:16px;
+    backdrop-filter:blur(10px);
+    overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    transition:transform 0.3s, box-shadow 0.3s;
+  }
+  .sug-banner-wrap:hover {
+    transform:scale(1.01);
+    box-shadow:0 12px 40px rgba(0,0,0,0.6);
+  }
+
+  /* ── Role tabs ───────────────────────────────────────── */
+  .role-tab {
+    transition:all 0.2s; border-radius:10px;
+    border:1px solid transparent;
+    background:transparent; color:#9ca3af; cursor:pointer;
+  }
+  .role-tab.active {
+    background:linear-gradient(135deg,#1e3a8a,#1d4ed8);
+    color:white; border-color:rgba(59,130,246,0.4);
+    box-shadow:0 4px 16px rgba(29,78,216,0.3);
+  }
+  .role-tab:not(.active):hover {
+    background:rgba(255,255,255,0.07); color:white;
+  }
+
+  /* ── Inputs ──────────────────────────────────────────── */
+  .inp {
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.13);
+    color:white; transition:all 0.2s; border-radius:12px;
+    width:100%; padding:12px 16px 12px 44px;
+    font-size:14px; outline:none;
+  }
+  .inp:focus {
+    border-color:#3b82f6;
+    box-shadow:0 0 0 3px rgba(59,130,246,0.18);
+    background:rgba(59,130,246,0.07);
+  }
+  .inp::placeholder { color:rgba(255,255,255,0.3); }
+  .inp.error {
+    border-color:#ef4444 !important;
+    box-shadow:0 0 0 3px rgba(239,68,68,0.15) !important;
+  }
+
+  /* ── Submit button ───────────────────────────────────── */
+  .btn-login {
+    width:100%; padding:14px;
+    background:linear-gradient(135deg,#1e3a8a 0%,#7f1d1d 100%);
+    border:none; border-radius:12px;
+    color:white; font-weight:700; font-size:15px;
+    cursor:pointer; transition:all 0.25s;
+    position:relative; overflow:hidden;
+    box-shadow:0 4px 20px rgba(127,29,29,0.35);
+  }
+  .btn-login:hover:not(:disabled) {
+    transform:translateY(-2px);
+    box-shadow:0 8px 28px rgba(185,28,28,0.45);
+  }
+  .btn-login:disabled { opacity:0.65; cursor:not-allowed; transform:none; }
+  .btn-login::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(255,255,255,0.08),transparent);
+    pointer-events:none;
+  }
+
+  /* ── Info cards ──────────────────────────────────────── */
+  .info-card {
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.09);
+    border-radius:16px; padding:18px;
+    backdrop-filter:blur(12px);
+  }
+
+  /* ── Footer bar ──────────────────────────────────────── */
+  .footer-bar {
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    background:rgba(4,12,35,0.97);
+    border-top:1px solid rgba(255,255,255,0.06);
+    backdrop-filter:blur(16px);
+    padding:7px 16px;
+    display:flex; align-items:center;
+    justify-content:center; gap:6px;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     PROFESSIONAL TOAST SYSTEM — No emoji, clean design
+  ══════════════════════════════════════════════════════ */
+  #toast-container {
+    position:fixed; top:20px; right:20px;
+    z-index:9999;
+    display:flex; flex-direction:column; gap:10px;
+    pointer-events:none;
+  }
+  .toast {
+    pointer-events:all;
+    min-width:300px; max-width:400px;
+    background:rgba(10,14,40,0.97);
+    border-radius:14px;
+    padding:0;
+    overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,0.6),
+               0 1px 0 rgba(255,255,255,0.05) inset;
+    border:1px solid rgba(255,255,255,0.08);
+    animation:toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    display:flex; align-items:stretch;
+  }
+  .toast.removing {
+    animation:toastOut 0.25s ease forwards;
+  }
+  @keyframes toastIn {
+    from { opacity:0; transform:translateX(120%) scale(0.85); }
+    to   { opacity:1; transform:translateX(0) scale(1); }
+  }
+  @keyframes toastOut {
+    from { opacity:1; transform:translateX(0) scale(1); }
+    to   { opacity:0; transform:translateX(120%) scale(0.9); }
+  }
+
+  /* Left accent bar */
+  .toast-bar {
+    width:4px; flex-shrink:0; border-radius:0;
+  }
+  .toast-bar.success { background:linear-gradient(180deg,#10b981,#059669); }
+  .toast-bar.error   { background:linear-gradient(180deg,#ef4444,#dc2626); }
+  .toast-bar.warning { background:linear-gradient(180deg,#f59e0b,#d97706); }
+  .toast-bar.info    { background:linear-gradient(180deg,#3b82f6,#2563eb); }
+
+  /* Icon circle */
+  .toast-icon {
+    width:44px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:15px;
+  }
+  .toast-icon.success { color:#10b981; }
+  .toast-icon.error   { color:#ef4444; }
+  .toast-icon.warning { color:#f59e0b; }
+  .toast-icon.info    { color:#3b82f6; }
+
+  /* Content */
+  .toast-content {
+    flex:1; padding:12px 4px 12px 0;
+  }
+  .toast-title {
+    font-size:12px; font-weight:700; letter-spacing:0.04em;
+    text-transform:uppercase; margin-bottom:2px;
+  }
+  .toast-title.success { color:#10b981; }
+  .toast-title.error   { color:#ef4444; }
+  .toast-title.warning { color:#f59e0b; }
+  .toast-title.info    { color:#3b82f6; }
+
+  .toast-msg {
+    font-size:13px; font-weight:500; color:#e2e8f0;
+    line-height:1.45;
+  }
+
+  /* Close button */
+  .toast-close {
+    width:36px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:none; border:none; cursor:pointer;
+    color:#6b7280; font-size:11px;
+    transition:color 0.15s;
+  }
+  .toast-close:hover { color:#e2e8f0; }
+
+  /* Progress bar */
+  .toast-progress {
+    position:absolute; bottom:0; left:0; height:2px;
+    border-radius:0 0 14px 14px;
+    animation:toastProgress linear forwards;
+  }
+  .toast-progress.success { background:#10b981; }
+  .toast-progress.error   { background:#ef4444; }
+  .toast-progress.warning { background:#f59e0b; }
+  .toast-progress.info    { background:#3b82f6; }
+  @keyframes toastProgress {
+    from { width:100%; }
+    to   { width:0%; }
+  }
+
+  ::-webkit-scrollbar       { width:4px; }
+  ::-webkit-scrollbar-thumb { background:rgba(59,130,246,0.5); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<!-- Backgrounds -->
+<div id="bg-gradient"></div>
+<div id="bg-img"     ></div>
+<div id="bg-overlay" ></div>
+<div id="particles"  ></div>
+
+<!-- ★ Professional Toast Container ★ -->
+<div id="toast-container"></div>
+
+<!-- ══ UNIVERSITY TOP BAR ══ -->
+<header class="uni-topbar">
+  <div class="max-w-7xl mx-auto px-4 py-2
+    flex items-center justify-between gap-3">
+
+    <!-- Logo + Name -->
+    <div class="flex items-center gap-3 flex-shrink-0">
+      <div class="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0
+        bg-white border-2 border-yellow-600/40 shadow-xl
+        flex items-center justify-center">
+        <img src="/static/images/logo.png"
+          onerror="this.style.display='none';
+            this.nextElementSibling.style.display='flex'"
+          alt="SUG"
+          class="w-full h-full object-contain p-0.5"/>
+        <div style="background:linear-gradient(135deg,#1e3a8a,#7f1d1d);
+          display:none; align-items:center; justify-content:center;
+          font-weight:900; color:white; font-size:11px;
+          width:100%; height:100%; border-radius:inherit;">SUG</div>
+      </div>
+      <div>
+        <p class="text-white font-black text-sm sm:text-base
+          leading-tight tracking-wide">
+          SHOBHIT UNIVERSITY GANGOH
+          <span class="text-yellow-400 font-semibold
+            text-[11px] ml-1">(SUG)</span>
+        </p>
+        <p class="text-green-300 text-[10px] font-medium tracking-widest">
+          GANGOH, SAHARANPUR · EDUCATION EMPOWERS
+        </p>
+      </div>
+    </div>
+
+    <!-- Dept (desktop) -->
+    <div class="hidden lg:flex flex-col items-center text-center">
+      <p class="text-blue-300 text-[10px] font-bold
+        uppercase tracking-[0.15em]">Department of</p>
+      <p class="text-white text-sm font-black tracking-wide">
+        Computer Science &amp; Technology
+      </p>
+    </div>
+
+    <!-- Badges -->
+    <div class="hidden md:flex items-center gap-2.5 flex-shrink-0">
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5
+        rounded-full text-xs font-bold
+        bg-yellow-500/15 border border-yellow-500/35 text-yellow-400">
+        <i class="fas fa-award"></i> NAAC A
+      </span>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5
+        rounded-full text-xs font-bold
+        bg-green-500/15 border border-green-500/35 text-green-400">
+        <i class="fas fa-graduation-cap"></i> ExamPro
+      </span>
+    </div>
+  </div>
+  <div class="h-0.5 bg-gradient-to-r
+    from-transparent via-red-600/60 to-transparent"></div>
+</header>
+
+<!-- ══ MAIN ══ -->
+<div class="relative z-10 min-h-screen flex items-center justify-center
+  px-4 pt-20 pb-14">
+  <div class="w-full max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+
+      <!-- ══ LEFT PANEL ══ -->
+      <div class="hidden lg:flex flex-col gap-5">
+
+        <!-- Title banner -->
+        <div class="sug-banner-wrap flex flex-col items-center
+          justify-center py-8 px-6 text-center">
+          <div class="w-14 h-14 rounded-2xl
+            bg-gradient-to-br from-blue-600/30 to-red-700/30
+            border border-white/10
+            flex items-center justify-center mb-4">
+            <i class="fas fa-desktop text-white text-2xl"></i>
+          </div>
+          <h1 class="text-3xl font-black text-white tracking-wide
+            leading-tight">
+            Online Examination
+            <span class="block text-blue-400">System</span>
+          </h1>
+          <p class="text-blue-300 text-sm mt-2 tracking-wider">
+            Computer Science &amp; Technology Department
+          </p>
+        </div>
+
+        <!-- Tagline -->
+        <div class="text-center">
+          <p class="text-gray-400 text-sm">
+            SHOBHIT UNIVERSITY GANGOH (SUG)
+          </p>
+          <div class="flex items-center justify-center gap-2 mt-2">
+            <span class="w-10 h-0.5 bg-gradient-to-r
+              from-transparent to-red-500/60"></span>
+            <span class="text-yellow-400 text-xs font-bold
+              flex items-center gap-1">
+              <i class="fas fa-award"></i> NAAC A Accredited
+            </span>
+            <span class="w-10 h-0.5 bg-gradient-to-l
+              from-transparent to-red-500/60"></span>
+          </div>
+        </div>
+
+        <!-- Features card -->
+        <div class="info-card">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-11 h-11 rounded-xl bg-green-700/25
+              border border-green-600/30
+              flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-laptop-code text-green-400 text-lg"></i>
+            </div>
+            <div>
+              <p class="text-white font-bold">
+                Computer Science &amp; Technology
+              </p>
+              <p class="text-gray-500 text-xs">
+                SUG · Online Examination Portal
+              </p>
+            </div>
+          </div>
+          <div class="h-px bg-white/5 mb-4"></div>
+          <div class="grid grid-cols-2 gap-3 text-xs text-gray-400">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-shield-alt text-emerald-400"></i>
+              AI-Proctored Exams
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="fas fa-robot text-purple-400"></i>
+              AI Answer Grading
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="fas fa-clock text-blue-400"></i>
+              Real-Time Timer
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="fas fa-chart-bar text-yellow-400"></i>
+              Instant Analytics
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="fas fa-trophy text-red-400"></i>
+              Live Rankings
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="fas fa-lock text-indigo-400"></i>
+              Secure &amp; Encrypted
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="info-card text-center py-3">
+            <p class="text-2xl font-black text-blue-400">100%</p>
+            <p class="text-gray-500 text-xs mt-0.5">Secure</p>
+          </div>
+          <div class="info-card text-center py-3">
+            <p class="text-2xl font-black text-emerald-400">AI</p>
+            <p class="text-gray-500 text-xs mt-0.5">Powered</p>
+          </div>
+          <div class="info-card text-center py-3">
+            <p class="text-2xl font-black text-red-400">24/7</p>
+            <p class="text-gray-500 text-xs mt-0.5">Available</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ RIGHT: LOGIN CARD ══ -->
+      <div class="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto">
+        <div class="login-card rounded-3xl overflow-hidden">
+
+          <!-- SUG Banner PNG -->
+          <div class="bg-white px-3 pt-3 pb-2">
+            <img src="/static/images/sug_banner.png"
+              onerror="this.parentElement.style.display='none'"
+              alt="Shobhit University Gangoh"
+              class="w-full h-auto object-contain block mx-auto"
+              style="max-height:90px;"/>
+          </div>
+
+          <!-- Dept strip -->
+          <div class="px-4 py-2 text-center"
+            style="background:linear-gradient(135deg,#14532d,#1e3a8a)">
+            <p class="text-white text-xs font-black
+              tracking-widest uppercase">
+              Department of Computer Science &amp; Technology
+            </p>
+            <p class="text-green-300 text-[10px] tracking-wide mt-0.5">
+              Online Examination Portal
+            </p>
+          </div>
+
+          <!-- Card body -->
+          <div class="p-6 space-y-4">
+
+            <!-- Welcome -->
+            <div class="text-center">
+              <h2 class="text-xl font-black text-white mb-0.5">
+                Welcome Back
+              </h2>
+              <p class="text-gray-400 text-xs">
+                Sign in to access your SUG Exam Portal
+              </p>
+            </div>
+
+            <!-- Role tabs -->
+            <div class="grid grid-cols-2 gap-2 p-1.5 rounded-xl
+              bg-white/5 border border-white/8">
+              <button id="tab-student" onclick="switchRole('student')"
+                class="role-tab active py-2.5 text-sm font-bold
+                  flex items-center justify-center gap-2">
+                <i class="fas fa-user-graduate"></i> Student
+              </button>
+              <button id="tab-faculty" onclick="switchRole('faculty')"
+                class="role-tab py-2.5 text-sm font-bold
+                  flex items-center justify-center gap-2">
+                <i class="fas fa-chalkboard-teacher"></i> Faculty
+              </button>
+            </div>
+
+            <!-- Form -->
+            <form id="login-form" onsubmit="doLogin(event)"
+              class="space-y-3">
+
+              <!-- ★ Student: 11-digit Roll Number ★ -->
+              <div id="field-roll" class="relative">
+                <i class="fas fa-id-card absolute left-4 top-1/2
+                  -translate-y-1/2 text-gray-500 text-sm
+                  pointer-events-none z-10"></i>
+                <input id="inp-roll" type="text"
+                  placeholder="Roll Number (11 digits: 23014168059)"
+                  maxlength="11"
+                  inputmode="numeric"
+                  autocomplete="username"
+                  class="inp"
+                  style="letter-spacing:1.5px; font-family:monospace;
+                    font-size:14px; padding-right:52px;"
+                  oninput="onRollInput(this)"/>
+                <!-- live digit counter -->
+                <span id="roll-count"
+                  class="absolute right-4 top-1/2 -translate-y-1/2
+                    text-[11px] font-bold font-mono text-gray-600
+                    pointer-events-none z-10">
+                  0/11
+                </span>
+              </div>
+
+              <!-- Faculty: Username -->
+              <div id="field-user" class="relative hidden">
+                <i class="fas fa-user absolute left-4 top-1/2
+                  -translate-y-1/2 text-gray-500 text-sm
+                  pointer-events-none z-10"></i>
+                <input id="inp-user" type="text"
+                  placeholder="Faculty Username"
+                  autocomplete="username" class="inp"
+                  oninput="this.value=this.value.toLowerCase()"/>
+              </div>
+
+              <!-- Password -->
+              <div class="relative">
+                <i class="fas fa-lock absolute left-4 top-1/2
+                  -translate-y-1/2 text-gray-500 text-sm
+                  pointer-events-none z-10"></i>
+                <input id="inp-pass" type="password"
+                  placeholder="Password"
+                  autocomplete="current-password"
+                  class="inp" style="padding-right:48px"/>
+                <button type="button" onclick="togglePass()"
+                  class="absolute right-4 top-1/2 -translate-y-1/2
+                    text-gray-500 hover:text-white transition-colors z-10">
+                  <i id="pass-eye" class="fas fa-eye text-sm"></i>
+                </button>
+              </div>
+
+              <!-- Submit -->
+              <button type="submit" id="login-btn" class="btn-login">
+                <span id="btn-text"
+                  class="relative z-10 flex items-center
+                    justify-center gap-2">
+                  <i class="fas fa-sign-in-alt"></i>
+                  Sign In to ExamPro
+                </span>
+              </button>
+            </form>
+
+            <!-- ★ Register link (no demo cards) ★ -->
+            <div class="flex items-center gap-3">
+              <div class="flex-1 h-px bg-white/8"></div>
+              <span class="text-gray-600 text-[10px] uppercase
+                tracking-wider">New here?</span>
+              <div class="flex-1 h-px bg-white/8"></div>
+            </div>
+
+            <a href="/register"
+              class="flex items-center justify-center gap-2
+                w-full py-2.5 rounded-xl text-sm font-bold
+                text-blue-400 border border-blue-500/25
+                bg-blue-500/8
+                hover:bg-blue-500/15 hover:border-blue-500/40
+                transition-all duration-200">
+              <i class="fas fa-user-plus text-xs"></i>
+              Create New Account
+            </a>
+
+          </div><!-- end card body -->
+
+          <!-- Copyright inside card -->
+          <div class="px-6 py-3 border-t border-white/6 text-center"
+            style="background:rgba(4,10,25,0.65)">
+            <p class="text-gray-500 text-[10px] leading-relaxed">
+              <i class="fas fa-shield-alt text-emerald-500 mr-1"></i>
+              © 2026 Shobhit University Gangoh (SUG) · All Rights Reserved
+            </p>
+            <p class="text-gray-600 text-[10px] mt-0.5
+              flex items-center justify-center gap-1">
+              <i class="fas fa-code text-purple-400 text-[9px]"></i>
+              Developed by
+              <span class="text-purple-400 font-bold ml-0.5">
+                Team Believer
+              </span>
+              <i class="fas fa-heart text-red-400 text-[9px] ml-0.5"></i>
+            </p>
+          </div>
+
+        </div><!-- end login-card -->
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Fixed footer -->
+<div class="footer-bar">
+  <i class="fas fa-copyright text-gray-600 text-[10px]"></i>
+  <span class="text-gray-500 text-[11px]">
+    2026 Shobhit University Gangoh (SUG) · All Rights Reserved ·
+  </span>
+  <span class="text-purple-400 text-[11px] font-bold
+    flex items-center gap-1">
+    <i class="fas fa-code text-[9px]"></i> Team Believer
+    <i class="fas fa-heart text-red-400 text-[9px]"></i>
+  </span>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+let currentRole = 'student';
+
+// ── Particles ──────────────────────────────────────────────────────────
+(function() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 16; i++) {
+    const p  = document.createElement('div');
+    const sz = Math.random() * 70 + 20;
+    p.className = 'particle';
+    p.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*18+14}s;
+      animation-delay:-${Math.random()*18}s;
+      opacity:${Math.random()*0.06+0.015};`;
+    c.appendChild(p);
+  }
+})();
+
+// ── Background image ───────────────────────────────────────────────────
+(function() {
+  const el  = document.getElementById('bg-img');
+  const img = new Image();
+  img.onload = () => {
+    el.style.backgroundImage = `url('${img.src}')`;
+    el.style.opacity = '1';
+  };
+  img.onerror = () => {
+    const fb = new Image();
+    fb.onload = () => {
+      el.style.backgroundImage = `url('${fb.src}')`;
+      el.style.opacity = '1';
+    };
+    fb.src = 'https://images.unsplash.com/photo-1562774053-701939374585'
+           + '?w=1920&q=70&auto=format&fit=crop';
+  };
+  img.src = '/static/images/university.jpg';
+})();
+
+// ══════════════════════════════════════════════════════════════════════
+// PROFESSIONAL TOAST SYSTEM
+// No emoji — clean icon + title + message design
+// ════════════════════════════════════════════���═════════════════════════
+const TOAST_CFG = {
+  success: {
+    icon:  'fas fa-check-circle',
+    title: 'Success'
+  },
+  error: {
+    icon:  'fas fa-times-circle',
+    title: 'Error'
+  },
+  warning: {
+    icon:  'fas fa-exclamation-triangle',
+    title: 'Warning'
+  },
+  info: {
+    icon:  'fas fa-info-circle',
+    title: 'Info'
+  }
+};
+
+function toast(msg, type = 'info', duration = 4000) {
+  const cfg = TOAST_CFG[type] || TOAST_CFG.info;
+  const container = document.getElementById('toast-container');
+
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.position = 'relative';
+
+  t.innerHTML = `
+    <div class="toast-bar ${type}"></div>
+    <div class="toast-icon ${type}">
+      <i class="${cfg.icon}"></i>
+    </div>
+    <div class="toast-content">
+      <div class="toast-title ${type}">${cfg.title}</div>
+      <div class="toast-msg">${msg}</div>
+    </div>
+    <button class="toast-close" onclick="removeToast(this.parentElement)">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="toast-progress ${type}"
+      style="animation-duration:${duration}ms">
+    </div>`;
+
+  container.appendChild(t);
+
+  // Auto remove
+  setTimeout(() => removeToast(t), duration);
+}
+
+function removeToast(el) {
+  if (!el || el.classList.contains('removing')) return;
+  el.classList.add('removing');
+  setTimeout(() => el.remove(), 250);
+}
+
+// ── Roll number live counter ────────────────────────────────────────────
+function onRollInput(inp) {
+  inp.value = inp.value.replace(/\D/g, '').slice(0, 11);
+  const len     = inp.value.length;
+  const counter = document.getElementById('roll-count');
+
+  counter.textContent = `${len}/11`;
+
+  if (len === 0) {
+    counter.style.color = '#6b7280';
+    inp.classList.remove('error');
+    inp.style.borderColor = '';
+  } else if (len < 11) {
+    counter.style.color = '#f59e0b';
+    inp.style.borderColor = 'rgba(245,158,11,0.5)';
+  } else {
+    counter.style.color = '#10b981';
+    inp.style.borderColor = 'rgba(16,185,129,0.5)';
+    inp.classList.remove('error');
+  }
+}
+
+// ── Role switch ─────────────────────────────────────────────────────────
+function switchRole(role) {
+  currentRole = role;
+  document.getElementById('tab-student')
+    .classList.toggle('active', role === 'student');
+  document.getElementById('tab-faculty')
+    .classList.toggle('active', role === 'faculty');
+  document.getElementById('field-roll')
+    .classList.toggle('hidden', role !== 'student');
+  document.getElementById('field-user')
+    .classList.toggle('hidden', role !== 'faculty');
+  document.getElementById('inp-pass').value = '';
+  document.getElementById(
+    role === 'student' ? 'inp-roll' : 'inp-user'
+  ).focus();
+}
+
+// ── Password toggle ─────────────────────────────────────────────────────
+function togglePass() {
+  const inp  = document.getElementById('inp-pass');
+  const eye  = document.getElementById('pass-eye');
+  const show = inp.type === 'password';
+  inp.type      = show ? 'text'  : 'password';
+  eye.className = show
+    ? 'fas fa-eye-slash text-sm'
+    : 'fas fa-eye text-sm';
+}
+
+// ── Login ────────────────────────────────────────────────────────────────
+async function doLogin(e) {
+  e.preventDefault();
+
+  const btn     = document.getElementById('login-btn');
+  const btnText = document.getElementById('btn-text');
+  const pass    = document.getElementById('inp-pass').value.trim();
+
+  if (!pass) {
+    toast('Please enter your password', 'warning'); return;
+  }
+
+  const body = { role: currentRole, password: pass };
+
+  if (currentRole === 'student') {
+    const roll = document.getElementById('inp-roll').value.trim();
+
+    if (!roll) {
+      toast('Please enter your roll number', 'warning');
+      document.getElementById('inp-roll').classList.add('error');
+      return;
+    }
+    // ★ 11-digit validation ★
+    if (!/^\d{11}$/.test(roll)) {
+      toast('Roll number must be exactly 11 digits', 'error');
+      document.getElementById('inp-roll').classList.add('error');
+      document.getElementById('inp-roll').focus();
+      return;
+    }
+    body.roll_number = roll;
+
+  } else {
+    const user = document.getElementById('inp-user').value.trim();
+    if (!user) {
+      toast('Please enter your username', 'warning'); return;
+    }
+    body.username = user;
+  }
+
+  // Loading state
+  btn.disabled  = true;
+  btnText.innerHTML =
+    '<i class="fas fa-circle-notch fa-spin mr-2"></i>Signing In…';
+
+  try {
+    const r = await fetch('/api/auth/login', {
+      method:      'POST',
+      headers:     { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body:        JSON.stringify(body)
+    });
+    const d = await r.json();
+
+    if (r.ok) {
+      btnText.innerHTML =
+        '<i class="fas fa-check mr-2"></i>Redirecting…';
+      toast(`Welcome back, ${d.name || 'User'}`, 'success', 2500);
+      setTimeout(() => { window.location.href = d.redirect; }, 900);
+
+    } else {
+      toast(d.error || 'Login failed. Please check your credentials.',
+            'error');
+      btn.disabled  = false;
+      btnText.innerHTML =
+        '<i class="fas fa-sign-in-alt mr-2"></i>Sign In to ExamPro';
+      document.getElementById('inp-pass').focus();
+    }
+
+  } catch {
+    toast('Server error. Please try again.', 'error');
+    btn.disabled  = false;
+    btnText.innerHTML =
+      '<i class="fas fa-sign-in-alt mr-2"></i>Sign In to ExamPro';
+  }
+}
+
+// ── Auto-redirect if already logged in ──────────────────────────────────
+(async function() {
+  try {
+    const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
+    if (r.ok) {
+      const d = await r.json();
+      window.location.href =
+        d.role === 'faculty'
+          ? '/faculty/dashboard'
+          : '/student/dashboard';
+    }
+  } catch { /* stay on login */ }
+})();
+</script>
+</body>
+</html>

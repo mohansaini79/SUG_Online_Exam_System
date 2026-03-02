@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Register – ExamPro SUG</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { font-family:'Inter',sans-serif; box-sizing:border-box; margin:0; padding:0; }
+  body { min-height:100vh; background:#04081a; overflow-x:hidden; }
+
+  /* ── Background ───────────────────────────────────── */
+  #bg-gradient {
+    position:fixed; inset:0; z-index:0;
+    background:linear-gradient(135deg,
+      #04142a 0%, #080820 40%, #2a0808 70%, #04142a 100%);
+    background-size:400% 400%;
+    animation:gradShift 12s ease infinite;
+  }
+  @keyframes gradShift {
+    0%,100%{ background-position:0% 50%; }
+    50%    { background-position:100% 50%; }
+  }
+
+  /* ── University photo background ──────────────────── */
+  #bg-img {
+    position:fixed; inset:0; z-index:1;
+    background-size:cover; background-position:center;
+    opacity:0; transition:opacity 1.2s ease;
+  }
+
+  /* ── Dark overlay ──────────────────────────────────── */
+  #bg-overlay {
+    position:fixed; inset:0; z-index:2;
+    background:linear-gradient(135deg,
+      rgba(4,15,50,0.82) 0%,
+      rgba(8,8,30,0.80) 45%,
+      rgba(80,10,10,0.78) 100%);
+  }
+
+  /* ── Floating bubbles ──────────────────────────────── */
+  .bubble {
+    position:fixed; border-radius:50%;
+    background:rgba(255,255,255,0.03);
+    animation:floatUp linear infinite;
+    pointer-events:none; z-index:3;
+  }
+  @keyframes floatUp {
+    0%   { transform:translateY(106vh) rotate(0deg);   opacity:0; }
+    8%   { opacity:1; }
+    92%  { opacity:0.7; }
+    100% { transform:translateY(-6vh) rotate(720deg);  opacity:0; }
+  }
+
+  /* ── Top bar ────────────────────────────────────────── */
+  .uni-topbar {
+    position:fixed; top:0; left:0; right:0; z-index:200;
+    background:rgba(4,20,55,0.97);
+    border-bottom:2px solid rgba(185,28,28,0.5);
+    backdrop-filter:blur(20px);
+  }
+
+  /* ── Card ───────────────────────────────────────────── */
+  .reg-card {
+    background:rgba(8,12,38,0.88);
+    border:1px solid rgba(255,255,255,0.12);
+    backdrop-filter:blur(28px);
+    border-radius:24px; overflow:hidden;
+    box-shadow:0 32px 80px rgba(0,0,0,0.75),
+               0 0 0 1px rgba(255,255,255,0.04) inset;
+  }
+
+  /* ── Inputs ─────────────────────────────────────────── */
+  .inp {
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.13);
+    color:white; border-radius:12px;
+    width:100%; padding:11px 16px 11px 42px;
+    font-size:13px; outline:none; transition:all 0.2s;
+  }
+  .inp:focus {
+    border-color:#3b82f6;
+    box-shadow:0 0 0 3px rgba(59,130,246,0.18);
+    background:rgba(59,130,246,0.07);
+  }
+  .inp::placeholder { color:rgba(255,255,255,0.28); }
+  .inp.err {
+    border-color:rgba(239,68,68,0.6) !important;
+    box-shadow:0 0 0 3px rgba(239,68,68,0.12) !important;
+  }
+  .inp-w { position:relative; }
+  .inp-w > .ico {
+    position:absolute; left:14px; top:50%;
+    transform:translateY(-50%);
+    color:#6b7280; font-size:12px;
+    pointer-events:none; z-index:1;
+  }
+  .lbl {
+    color:#9ca3af; font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.06em;
+    display:block; margin-bottom:5px;
+  }
+
+  /* ── Tabs ────────────────────────────────────────────── */
+  .tab {
+    transition:all 0.2s; border-radius:10px;
+    border:1px solid transparent; cursor:pointer;
+    background:transparent; color:#9ca3af; padding:10px;
+    font-weight:700; font-size:13px;
+    display:flex; align-items:center;
+    justify-content:center; gap:6px;
+  }
+  .tab.active {
+    background:linear-gradient(135deg,#1e3a8a,#1d4ed8);
+    color:white; border-color:rgba(59,130,246,0.4);
+    box-shadow:0 4px 16px rgba(29,78,216,0.3);
+  }
+  .tab:not(.active):hover {
+    background:rgba(255,255,255,0.07); color:white;
+  }
+
+  /* ── Submit ──────────────────────────────────────────── */
+  .btn-reg {
+    width:100%; padding:13px;
+    background:linear-gradient(135deg,#1e3a8a,#7f1d1d);
+    border:none; border-radius:12px; color:white;
+    font-weight:700; font-size:14px; cursor:pointer;
+    transition:all 0.25s; position:relative; overflow:hidden;
+    box-shadow:0 4px 20px rgba(127,29,29,0.35);
+  }
+  .btn-reg:hover:not(:disabled) {
+    transform:translateY(-2px);
+    box-shadow:0 8px 28px rgba(185,28,28,0.45);
+  }
+  .btn-reg:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+  .btn-reg::after {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg,rgba(255,255,255,0.08),transparent);
+    pointer-events:none;
+  }
+
+  /* ── Faculty key box ─────────────────────────────────── */
+  .key-box {
+    background:rgba(245,158,11,0.08);
+    border:1px solid rgba(245,158,11,0.3);
+    border-radius:12px; padding:12px 14px;
+  }
+
+  /* ── Footer bar ──────────────────────────────────────── */
+  .footer-bar {
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    background:rgba(3,8,25,0.97);
+    border-top:1px solid rgba(255,255,255,0.06);
+    backdrop-filter:blur(16px); padding:7px 16px;
+    display:flex; align-items:center;
+    justify-content:center; gap:5px;
+  }
+
+  /* ══════════════════════════════════════════════════════
+     PROFESSIONAL TOAST
+  ══════════════════════════════════════════════════════ */
+  #toast-container {
+    position:fixed; top:20px; right:20px;
+    z-index:9999;
+    display:flex; flex-direction:column; gap:10px;
+    pointer-events:none;
+  }
+  .toast {
+    pointer-events:all;
+    min-width:300px; max-width:400px;
+    background:rgba(10,14,40,0.97);
+    border-radius:14px; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.08);
+    box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    display:flex; align-items:stretch; position:relative;
+    animation:tIn 0.3s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  .toast.out { animation:tOut 0.25s ease forwards; }
+  @keyframes tIn {
+    from { opacity:0; transform:translateX(110%) scale(0.88); }
+    to   { opacity:1; transform:translateX(0) scale(1); }
+  }
+  @keyframes tOut {
+    from { opacity:1; transform:translateX(0) scale(1); }
+    to   { opacity:0; transform:translateX(110%) scale(0.9); }
+  }
+  .t-bar { width:4px; flex-shrink:0; }
+  .t-bar.success { background:linear-gradient(180deg,#10b981,#059669); }
+  .t-bar.error   { background:linear-gradient(180deg,#ef4444,#dc2626); }
+  .t-bar.warning { background:linear-gradient(180deg,#f59e0b,#d97706); }
+  .t-bar.info    { background:linear-gradient(180deg,#3b82f6,#2563eb); }
+  .t-ico {
+    width:42px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px;
+  }
+  .t-ico.success { color:#10b981; }
+  .t-ico.error   { color:#ef4444; }
+  .t-ico.warning { color:#f59e0b; }
+  .t-ico.info    { color:#3b82f6; }
+  .t-body { flex:1; padding:11px 4px 11px 0; }
+  .t-title {
+    font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px;
+  }
+  .t-title.success { color:#10b981; }
+  .t-title.error   { color:#ef4444; }
+  .t-title.warning { color:#f59e0b; }
+  .t-title.info    { color:#3b82f6; }
+  .t-msg { font-size:12px; font-weight:500; color:#e2e8f0; line-height:1.4; }
+  .t-close {
+    width:34px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:none; border:none; cursor:pointer;
+    color:#6b7280; font-size:10px; transition:color 0.15s;
+  }
+  .t-close:hover { color:#e2e8f0; }
+  .t-prog {
+    position:absolute; bottom:0; left:0; height:2px;
+    animation:tProg linear forwards;
+  }
+  .t-prog.success { background:#10b981; }
+  .t-prog.error   { background:#ef4444; }
+  .t-prog.warning { background:#f59e0b; }
+  .t-prog.info    { background:#3b82f6; }
+  @keyframes tProg { from{width:100%} to{width:0%} }
+
+  select.inp { cursor:pointer; }
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-thumb {
+    background:rgba(59,130,246,0.5); border-radius:4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ★ Background stack — same as login ★ -->
+<div id="bg-gradient"></div>
+<div id="bg-img"     ></div>
+<div id="bg-overlay" ></div>
+<div id="bubbles"    ></div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<!-- ══ TOP BAR ══ -->
+<header class="uni-topbar">
+  <div class="max-w-7xl mx-auto px-4 py-2
+    flex items-center justify-between gap-3">
+
+    <div class="flex items-center gap-3 flex-shrink-0">
+      <div class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0
+        bg-white border-2 border-yellow-600/40 shadow-xl
+        flex items-center justify-center">
+        <img src="/static/images/logo.png"
+          onerror="this.style.display='none';
+            this.nextElementSibling.style.display='flex'"
+          alt="SUG"
+          class="w-full h-full object-contain p-0.5"/>
+        <div style="background:linear-gradient(135deg,#1e3a8a,#7f1d1d);
+          display:none;align-items:center;justify-content:center;
+          font-weight:900;color:white;font-size:10px;
+          width:100%;height:100%;border-radius:inherit;">SUG</div>
+      </div>
+      <div>
+        <p class="text-white font-black text-sm leading-tight tracking-wide">
+          SHOBHIT UNIVERSITY GANGOH
+          <span class="text-yellow-400 font-semibold text-[11px] ml-1">
+            (SUG)
+          </span>
+        </p>
+        <p class="text-green-300 text-[10px] font-medium tracking-widest">
+          GANGOH, SAHARANPUR · EDUCATION EMPOWERS
+        </p>
+      </div>
+    </div>
+
+    <div class="hidden lg:flex flex-col items-center text-center">
+      <p class="text-blue-300 text-[10px] font-bold
+        uppercase tracking-[0.15em]">Department of</p>
+      <p class="text-white text-sm font-black tracking-wide">
+        Computer Science &amp; Technology
+      </p>
+    </div>
+
+    <div class="hidden md:flex items-center gap-2 flex-shrink-0">
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5
+        rounded-full text-xs font-bold
+        bg-yellow-500/15 border border-yellow-500/35 text-yellow-400">
+        <i class="fas fa-award text-[10px]"></i> NAAC A
+      </span>
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5
+        rounded-full text-xs font-bold
+        bg-green-500/15 border border-green-500/35 text-green-400">
+        <i class="fas fa-graduation-cap text-[10px]"></i> ExamPro
+      </span>
+    </div>
+  </div>
+  <div class="h-0.5 bg-gradient-to-r
+    from-transparent via-red-600/60 to-transparent"></div>
+</header>
+
+<!-- ══ PAGE ══ -->
+<div class="relative z-10 min-h-screen flex items-center
+  justify-center px-4 pt-20 pb-14">
+  <div class="w-full max-w-lg">
+    <div class="reg-card">
+
+      <!-- SUG Banner -->
+      <div class="bg-white px-4 pt-3 pb-2">
+        <img src="/static/images/sug_banner.png"
+          onerror="this.parentElement.style.display='none'"
+          alt="SUG"
+          class="h-16 object-contain mx-auto block"/>
+      </div>
+
+      <!-- Dept strip -->
+      <div class="px-4 py-2 text-center"
+        style="background:linear-gradient(135deg,#14532d,#1e3a8a)">
+        <p class="text-white text-xs font-black tracking-widest uppercase">
+          Create Account — SUG ExamPro
+        </p>
+        <p class="text-green-300 text-[10px] mt-0.5">
+          Dept. of Computer Science &amp; Technology
+        </p>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6 space-y-4">
+
+        <div class="text-center">
+          <h2 class="text-lg font-black text-white">Register Account</h2>
+          <p class="text-gray-500 text-xs mt-0.5">
+            Already have an account?
+            <a href="/login"
+              class="text-blue-400 hover:text-blue-300
+                font-semibold ml-1 transition-colors">
+              Sign In →
+            </a>
+          </p>
+        </div>
+
+        <!-- Role tabs -->
+        <div class="grid grid-cols-2 gap-2 p-1.5 rounded-xl
+          bg-white/5 border border-white/8">
+          <button id="tab-s" onclick="switchRole('student')"
+            class="tab active">
+            <i class="fas fa-user-graduate"></i> Student
+          </button>
+          <button id="tab-f" onclick="switchRole('faculty')"
+            class="tab">
+            <i class="fas fa-chalkboard-teacher"></i> Faculty
+          </button>
+        </div>
+
+        <!-- Faculty restricted warning -->
+        <div id="fac-warn" class="key-box hidden">
+          <div class="flex items-start gap-2">
+            <i class="fas fa-shield-alt text-yellow-400 mt-0.5
+              flex-shrink-0 text-sm"></i>
+            <div>
+              <p class="text-yellow-400 text-xs font-bold mb-1">
+                Faculty Registration — Restricted
+              </p>
+              <p class="text-yellow-300/65 text-[11px] leading-relaxed">
+                Requires a <strong>secret key</strong> from Admin / HOD.<br/>
+                Contact:
+                <span class="text-blue-400">
+                  admin@shobhituniversity.ac.in
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORM -->
+        <form id="reg-form" onsubmit="doRegister(event)"
+          class="space-y-3">
+
+          <!-- Full Name -->
+          <div>
+            <label class="lbl">Full Name *</label>
+            <div class="inp-w">
+              <i class="fas fa-user ico"></i>
+              <input id="r-name" type="text"
+                placeholder="e.g. Rahul Sharma"
+                class="inp" required/>
+            </div>
+          </div>
+
+          <!-- ── STUDENT FIELDS ── -->
+
+          <!-- Roll Number: 11 digits -->
+          <div id="f-roll">
+            <label class="lbl">
+              Roll Number *
+              <span class="text-blue-400 normal-case font-medium ml-1">
+                (exactly 11 digits)
+              </span>
+            </label>
+            <div class="inp-w">
+              <i class="fas fa-id-card ico"></i>
+              <input id="r-roll" type="text"
+                placeholder="e.g. 23014168059"
+                maxlength="11"
+                inputmode="numeric"
+                class="inp"
+                style="letter-spacing:2px; font-family:monospace;
+                  font-size:14px; padding-right:50px;"
+                oninput="onRollInput(this)"/>
+              <span id="roll-cnt"
+                class="absolute right-3 top-1/2 -translate-y-1/2
+                  text-[10px] font-bold font-mono text-gray-600
+                  pointer-events-none z-1">
+                0/11
+              </span>
+            </div>
+            <p id="roll-hint"
+              class="text-gray-600 text-[10px] mt-1 ml-1">
+              <i class="fas fa-info-circle mr-1"></i>
+              Enter your 11-digit university roll number
+            </p>
+          </div>
+
+          <!-- Course & Semester -->
+          <div id="f-course" class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="lbl">Course</label>
+              <div class="inp-w">
+                <i class="fas fa-book ico"></i>
+                <select id="r-course" class="inp">
+                  <option value="">Select Course</option>
+                  <option>B.Tech CSE</option>
+                  <option>B.Tech IT</option>
+                  <option>MCA</option>
+                  <option>M.Tech</option>
+                  <option>BCA</option>
+                  <option>B.Sc CS</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="lbl">Semester</label>
+              <div class="inp-w">
+                <i class="fas fa-layer-group ico"></i>
+                <select id="r-sem" class="inp">
+                  <option value="">Select Sem</option>
+                  <option>1st Sem</option>
+                  <option>2nd Sem</option>
+                  <option>3rd Sem</option>
+                  <option>4th Sem</option>
+                  <option>5th Sem</option>
+                  <option>6th Sem</option>
+                  <option>7th Sem</option>
+                  <option>8th Sem</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── FACULTY FIELDS ── -->
+
+          <!-- Username -->
+          <div id="f-user" class="hidden">
+            <label class="lbl">Username *</label>
+            <div class="inp-w">
+              <i class="fas fa-at ico"></i>
+              <input id="r-user" type="text"
+                placeholder="e.g. dr.sharma"
+                class="inp"
+                oninput="this.value=this.value
+                  .toLowerCase().replace(/\s/g,'')"/>
+            </div>
+          </div>
+
+          <!-- Employee ID -->
+          <div id="f-emp" class="hidden">
+            <label class="lbl">Employee ID</label>
+            <div class="inp-w">
+              <i class="fas fa-briefcase ico"></i>
+              <input id="r-emp" type="text"
+                placeholder="e.g. SUG-FAC-001"
+                class="inp"/>
+            </div>
+          </div>
+
+          <!-- Email (both roles) -->
+          <div>
+            <label class="lbl">Email
+              <span class="text-gray-600 normal-case
+                font-normal ml-1">(optional)</span>
+            </label>
+            <div class="inp-w">
+              <i class="fas fa-envelope ico"></i>
+              <input id="r-email" type="email"
+                placeholder="e.g. rahul@shobhituniversity.ac.in"
+                class="inp"/>
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label class="lbl">
+              Password *
+              <span id="pass-hint-lbl"
+                class="text-gray-600 normal-case font-normal ml-1">
+                (min 6 chars)
+              </span>
+            </label>
+            <div class="inp-w">
+              <i class="fas fa-lock ico"></i>
+              <input id="r-pass" type="password"
+                placeholder="Password"
+                class="inp" required
+                style="padding-right:44px"/>
+              <button type="button"
+                onclick="tglP('r-pass','e1')"
+                style="position:absolute;right:12px;top:50%;
+                  transform:translateY(-50%);
+                  background:none;border:none;
+                  cursor:pointer;color:#6b7280;z-index:2;">
+                <i id="e1" class="fas fa-eye text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div>
+            <label class="lbl">Confirm Password *</label>
+            <div class="inp-w">
+              <i class="fas fa-lock ico"></i>
+              <input id="r-pass2" type="password"
+                placeholder="Re-enter password"
+                class="inp" required
+                style="padding-right:44px"/>
+              <button type="button"
+                onclick="tglP('r-pass2','e2')"
+                style="position:absolute;right:12px;top:50%;
+                  transform:translateY(-50%);
+                  background:none;border:none;
+                  cursor:pointer;color:#6b7280;z-index:2;">
+                <i id="e2" class="fas fa-eye text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ★ Faculty Secret Key (hidden for students) ★ -->
+          <div id="f-key" class="hidden">
+            <label class="lbl">
+              <i class="fas fa-key mr-1 text-yellow-400"></i>
+              Registration Key *
+              <span class="text-red-400 normal-case font-normal ml-1">
+                (faculty only)
+              </span>
+            </label>
+            <div class="inp-w">
+              <i class="fas fa-shield-alt ico"
+                style="color:#f59e0b"></i>
+              <input id="r-key" type="password"
+                placeholder="Enter key from Admin / HOD"
+                class="inp"
+                style="border-color:rgba(245,158,11,0.35);
+                  padding-right:44px"/>
+              <button type="button"
+                onclick="tglP('r-key','e3')"
+                style="position:absolute;right:12px;top:50%;
+                  transform:translateY(-50%);
+                  background:none;border:none;
+                  cursor:pointer;color:#6b7280;z-index:2;">
+                <i id="e3" class="fas fa-eye text-xs"></i>
+              </button>
+            </div>
+            <p class="text-yellow-600 text-[10px] mt-1 ml-1">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              Get this key from your HOD or Admin only
+            </p>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" id="reg-btn" class="btn-reg">
+            <span id="reg-btn-text"
+              class="relative z-10 flex items-center
+                justify-center gap-2">
+              <i class="fas fa-user-plus"></i> Create Account
+            </span>
+          </button>
+        </form>
+
+      </div><!-- end body -->
+
+      <!-- Card footer -->
+      <div class="px-6 py-3 border-t border-white/6 text-center"
+        style="background:rgba(4,10,25,0.65)">
+        <p class="text-gray-500 text-[10px]">
+          © 2026 Shobhit University Gangoh (SUG) · All Rights Reserved
+        </p>
+        <p class="text-gray-600 text-[10px] mt-0.5
+          flex items-center justify-center gap-1">
+          <i class="fas fa-code text-purple-400 text-[9px]"></i>
+          Developed by
+          <span class="text-purple-400 font-bold ml-0.5">Team Believer</span>
+          <i class="fas fa-heart text-red-400 text-[9px] ml-0.5"></i>
+        </p>
+      </div>
+
+    </div><!-- end card -->
+  </div>
+</div>
+
+<!-- Fixed footer -->
+<div class="footer-bar">
+  <i class="fas fa-copyright text-gray-600 text-[10px]"></i>
+  <span class="text-gray-500 text-[11px]">
+    2026 Shobhit University Gangoh (SUG) · All Rights Reserved ·
+  </span>
+  <span class="text-purple-400 text-[11px] font-bold
+    flex items-center gap-1">
+    <i class="fas fa-code text-[9px]"></i> Team Believer
+    <i class="fas fa-heart text-red-400 text-[9px]"></i>
+  </span>
+</div>
+
+<script>
+let role = 'student';
+
+// ── Bubbles (same as login page) ───────────────────────────────────────
+(function() {
+  const c = document.getElementById('bubbles');
+  for (let i = 0; i < 18; i++) {
+    const b  = document.createElement('div');
+    const sz = Math.random() * 75 + 18;
+    b.className = 'bubble';
+    b.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*18+12}s;
+      animation-delay:-${Math.random()*18}s;
+      opacity:${Math.random()*0.065+0.012};`;
+    c.appendChild(b);
+  }
+})();
+
+// ── University background image ────────────────────────────────────────
+(function() {
+  const el  = document.getElementById('bg-img');
+  const img = new Image();
+  img.onload = () => {
+    el.style.backgroundImage = `url('${img.src}')`;
+    el.style.opacity = '1';
+  };
+  img.onerror = () => {
+    const fb = new Image();
+    fb.onload = () => {
+      el.style.backgroundImage = `url('${fb.src}')`;
+      el.style.opacity = '1';
+    };
+    fb.src =
+      'https://images.unsplash.com/photo-1562774053-701939374585' +
+      '?w=1920&q=70&auto=format&fit=crop';
+  };
+  img.src = '/static/images/university.jpg';
+})();
+
+// ══════════════════════════════════════════════════════════════════════
+// PROFESSIONAL TOAST
+// ══════════════════════════════════════════════════════════════════════
+const T_CFG = {
+  success:{ icon:'fas fa-check-circle',        title:'Success'  },
+  error:  { icon:'fas fa-times-circle',         title:'Error'    },
+  warning:{ icon:'fas fa-exclamation-triangle', title:'Warning'  },
+  info:   { icon:'fas fa-info-circle',          title:'Info'     }
+};
+
+function toast(msg, type='info', dur=4500) {
+  const cfg = T_CFG[type] || T_CFG.info;
+  const ct  = document.getElementById('toast-container');
+  const t   = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `
+    <div class="t-bar ${type}"></div>
+    <div class="t-ico ${type}">
+      <i class="${cfg.icon}"></i>
+    </div>
+    <div class="t-body">
+      <div class="t-title ${type}">${cfg.title}</div>
+      <div class="t-msg">${msg}</div>
+    </div>
+    <button class="t-close" onclick="rmToast(this.parentElement)">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="t-prog ${type}"
+      style="animation-duration:${dur}ms"></div>`;
+  ct.appendChild(t);
+  setTimeout(() => rmToast(t), dur);
+}
+function rmToast(el) {
+  if (!el || el.classList.contains('out')) return;
+  el.classList.add('out');
+  setTimeout(() => el.remove(), 260);
+}
+
+// ── Roll counter ────────────────────────────────────────────────────────
+function onRollInput(inp) {
+  inp.value = inp.value.replace(/\D/g,'').slice(0,11);
+  const len = inp.value.length;
+  const cnt = document.getElementById('roll-cnt');
+  const hint= document.getElementById('roll-hint');
+  cnt.textContent = `${len}/11`;
+  if (len === 0) {
+    cnt.style.color = '#6b7280';
+    inp.style.borderColor = '';
+    hint.innerHTML = `<i class="fas fa-info-circle mr-1"></i>
+      Enter your 11-digit university roll number`;
+    hint.className = 'text-gray-600 text-[10px] mt-1 ml-1';
+  } else if (len < 11) {
+    cnt.style.color = '#f59e0b';
+    inp.style.borderColor = 'rgba(245,158,11,0.5)';
+    hint.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i>
+      Need ${11-len} more digit(s)`;
+    hint.className = 'text-yellow-600 text-[10px] mt-1 ml-1';
+  } else {
+    cnt.style.color = '#10b981';
+    inp.style.borderColor = 'rgba(16,185,129,0.5)';
+    hint.innerHTML = `<i class="fas fa-check-circle mr-1"></i>
+      Roll number complete`;
+    hint.className = 'text-emerald-500 text-[10px] mt-1 ml-1';
+  }
+}
+
+// ── Role switch ─────────────────────────────────────────────────────────
+function switchRole(r) {
+  role = r;
+  const isF = r === 'faculty';
+  document.getElementById('tab-s').classList.toggle('active',!isF);
+  document.getElementById('tab-f').classList.toggle('active', isF);
+  ['f-roll','f-course'].forEach(id =>
+    document.getElementById(id).classList.toggle('hidden', isF));
+  ['f-user','f-emp','f-key','fac-warn'].forEach(id =>
+    document.getElementById(id).classList.toggle('hidden',!isF));
+  document.getElementById('pass-hint-lbl').textContent =
+    isF ? '(min 8 chars)' : '(min 6 chars)';
+}
+
+// ── Password toggle ─────────────────────────────────────────────────────
+function tglP(id, eyeId) {
+  const inp  = document.getElementById(id);
+  const eye  = document.getElementById(eyeId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  eye.className = show
+    ? 'fas fa-eye-slash text-xs'
+    : 'fas fa-eye text-xs';
+}
+
+// ── Register ─────────────────────────────────────────────────────────────
+async function doRegister(e) {
+  e.preventDefault();
+  const btn  = document.getElementById('reg-btn');
+  const text = document.getElementById('reg-btn-text');
+  const pass  = document.getElementById('r-pass').value;
+  const pass2 = document.getElementById('r-pass2').value;
+  const name  = document.getElementById('r-name').value.trim();
+
+  if (!name) {
+    toast('Full name is required', 'warning'); return;
+  }
+
+  if (pass !== pass2) {
+    toast('Passwords do not match', 'error'); return;
+  }
+
+  const body = {
+    name,
+    email:    document.getElementById('r-email').value.trim(),
+    password: pass
+  };
+
+  if (role === 'student') {
+    const roll = document.getElementById('r-roll').value.trim();
+    if (!/^\d{11}$/.test(roll)) {
+      toast('Roll number must be exactly 11 digits (e.g. 23014168059)',
+            'error');
+      document.getElementById('r-roll').focus();
+      return;
+    }
+    if (pass.length < 6) {
+      toast('Password must be at least 6 characters','warning'); return;
+    }
+    body.roll_number = roll;
+    body.course      = document.getElementById('r-course').value;
+    body.semester    = document.getElementById('r-sem').value;
+
+  } else {
+    // Faculty
+    const uname = document.getElementById('r-user').value.trim();
+    const key   = document.getElementById('r-key').value.trim();
+    if (!uname) {
+      toast('Username is required','warning'); return;
+    }
+    if (!key) {
+      toast('Faculty registration key is required','warning'); return;
+    }
+    if (pass.length < 8) {
+      toast('Faculty password must be at least 8 characters','warning');
+      return;
+    }
+    body.username    = uname;
+    body.employee_id = document.getElementById('r-emp').value.trim();
+    body.secret_key  = key;
+  }
+
+  btn.disabled  = true;
+  text.innerHTML =
+    '<i class="fas fa-circle-notch fa-spin mr-2"></i>Creating Account…';
+
+  try {
+    // ★ Correct URL — goes to Flask, not file ★
+    const r = await fetch(`/api/auth/register/${role}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body)
+    });
+    const d = await r.json();
+
+    if (r.ok) {
+      toast(d.message || 'Account created successfully', 'success', 3000);
+      text.innerHTML =
+        '<i class="fas fa-check mr-2"></i>Account Created!';
+      setTimeout(() => { window.location.href = '/login'; }, 2000);
+    } else {
+      toast(d.error || 'Registration failed', 'error');
+      btn.disabled  = false;
+      text.innerHTML =
+        '<i class="fas fa-user-plus mr-2"></i>Create Account';
+    }
+  } catch (err) {
+    toast('Cannot connect to server. Make sure Flask is running on port 5000',
+          'error', 6000);
+    btn.disabled  = false;
+    text.innerHTML =
+      '<i class="fas fa-user-plus mr-2"></i>Create Account';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Results – ExamPro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- results.html — </head> se pehle add karo -->
+<script src="/static/js/toast.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { font-family:'Inter',sans-serif; }
+  body { background:#020208; }
+  .glass { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); }
+  .glass-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); transition:all 0.25s; }
+  .glass-card:hover { transform:translateY(-2px); border-color:rgba(99,102,241,0.3); box-shadow:0 12px 40px rgba(99,102,241,0.1); }
+</style>
+</head>
+<body class="min-h-screen text-gray-100">
+<div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none max-w-sm w-full"></div>
+
+<!-- Navbar -->
+<nav class="border-b border-white/5 px-6 py-4 flex items-center gap-4 sticky top-0 z-50 backdrop-blur-md"
+  style="background:rgba(2,2,8,0.92)">
+  <a href="javascript:history.back()"
+    class="w-8 h-8 rounded-xl glass flex items-center justify-center text-gray-400
+      hover:text-white transition-colors flex-shrink-0">
+    <i class="fas fa-arrow-left text-sm"></i>
+  </a>
+  <div class="flex items-center gap-2.5">
+    <div class="w-8 h-8 rounded-xl bg-yellow-500/15 border border-yellow-500/20 flex items-center justify-center">
+      <i class="fas fa-trophy text-yellow-400 text-sm"></i>
+    </div>
+    <h1 class="text-white font-bold">My Results</h1>
+  </div>
+  <button onclick="loadResults()"
+    class="ml-auto glass px-3 py-1.5 rounded-xl text-xs text-gray-400 hover:text-white
+      transition-colors flex items-center gap-1.5">
+    <i class="fas fa-sync-alt"></i> Refresh
+  </button>
+</nav>
+
+<main class="max-w-4xl mx-auto px-4 py-8">
+
+  <!-- Summary cards -->
+  <div id="summary-row" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 hidden">
+    <div class="glass rounded-2xl p-5 text-center">
+      <p class="text-3xl font-black text-white" id="s-total">0</p>
+      <p class="text-xs text-gray-500 mt-1">Exams Taken</p>
+    </div>
+    <div class="glass rounded-2xl p-5 text-center">
+      <p class="text-3xl font-black text-emerald-400" id="s-passed">0</p>
+      <p class="text-xs text-gray-500 mt-1">Passed</p>
+    </div>
+    <div class="glass rounded-2xl p-5 text-center">
+      <p class="text-3xl font-black text-yellow-400" id="s-rank">—</p>
+      <p class="text-xs text-gray-500 mt-1">Best Rank</p>
+    </div>
+    <div class="glass rounded-2xl p-5 text-center">
+      <p class="text-3xl font-black text-indigo-400" id="s-avg">—</p>
+      <p class="text-xs text-gray-500 mt-1">Avg Score</p>
+    </div>
+  </div>
+
+  <div id="results-container">
+    <div class="text-center py-24 text-gray-500">
+      <i class="fas fa-spinner fa-spin text-3xl mb-4 block text-gray-600"></i>
+      <p>Loading results…</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="/static/js/toast.js"></script>
+<script src="/static/js/app.js"></script>
+<script>
+const socket = io();
+socket.on('result_published', () => { loadResults(); showToast('success','🏆 New results published!',6000); });
+
+async function loadResults() {
+  const { ok, data } = await apiGet('/api/results');
+  const el = document.getElementById('results-container');
+  if (!ok || !data.length) {
+    el.innerHTML = `
+      <div class="glass rounded-2xl p-14 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-gray-800/60 flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-clock text-3xl text-gray-600"></i>
+        </div>
+        <p class="text-gray-400 font-medium text-lg mb-2">No results yet</p>
+        <p class="text-gray-600 text-sm">Results will appear here after your faculty publishes them.</p>
+      </div>`;
+    return;
+  }
+
+  const passed   = data.filter(r=>r.pass).length;
+  const avg      = Math.round(data.reduce((a,r)=>a+r.total,0)/data.length);
+  const bestRank = Math.min(...data.map(r=>r.rank));
+  document.getElementById('s-total').textContent  = data.length;
+  document.getElementById('s-passed').textContent = passed;
+  document.getElementById('s-rank').textContent   = '#'+bestRank;
+  document.getElementById('s-avg').textContent    = avg;
+  document.getElementById('summary-row').classList.remove('hidden');
+
+  el.innerHTML = data.map(r => `
+    <div class="glass-card rounded-2xl p-5 mb-4">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0
+          ${r.pass ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}">
+          ${r.rank===1?'🥇':r.rank===2?'🥈':r.rank===3?'🥉':r.pass?'✅':'❌'}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <p class="text-white font-bold">
+              Exam: <span class="font-mono text-indigo-300">${r.exam_id}</span>
+            </p>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold
+              ${r.pass ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
+                       : 'bg-red-500/15 text-red-300 border border-red-500/25'}">
+              ${r.pass?'PASS':'FAIL'}
+            </span>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="glass rounded-xl p-3 text-center">
+              <p class="text-xs text-gray-500 mb-1">Score</p>
+              <p class="text-xl font-black text-white">${r.total}</p>
+            </div>
+            <div class="glass rounded-xl p-3 text-center">
+              <p class="text-xs text-gray-500 mb-1">Rank</p>
+              <p class="text-xl font-black text-yellow-400">#${r.rank}</p>
+            </div>
+            <div class="glass rounded-xl p-3 text-center">
+              <p class="text-xs text-gray-500 mb-1">Percentile</p>
+              <p class="text-xl font-black text-indigo-400">${r.percentile}%</p>
+            </div>
+          </div>
+        </div>
+        <a href="/ranking/${r.exam_id}"
+          class="hidden sm:flex flex-col items-center gap-1 glass px-3 py-3 rounded-xl
+            hover:border-indigo-500/30 transition-all text-xs text-gray-500
+            hover:text-indigo-400 flex-shrink-0">
+          <i class="fas fa-list-ol text-lg mb-0.5"></i>
+          Ranking
+        </a>
+      </div>
+    </div>`).join('');
+}
+loadResults();
+</script>
+</body>
+</html>

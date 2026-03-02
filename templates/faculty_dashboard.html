@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Faculty Dashboard – ExamPro</title>
+<!-- results.html — </head> se pehle add karo -->
+<script src="/static/js/toast.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<!-- Toastify -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { font-family:'Inter',sans-serif; }
+  body { background:#020208; }
+  .glass  { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); }
+  .glass2 { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); }
+  .sidebar { background:rgba(2,2,12,0.98); border-right:1px solid rgba(255,255,255,0.06); }
+  .nav-item { transition:all 0.15s; border-radius:12px; cursor:pointer; }
+  .nav-item:hover  { background:rgba(139,92,246,0.12); color:white; }
+  .nav-active      { background:rgba(139,92,246,0.18)!important; color:white!important;
+                     border:1px solid rgba(139,92,246,0.25); }
+  .input-pro { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10);
+               color:white; transition:all 0.2s; }
+  .input-pro:focus { outline:none; border-color:#8b5cf6;
+                     box-shadow:0 0 0 3px rgba(139,92,246,0.15); }
+  .input-pro::placeholder { color:rgba(255,255,255,0.25); }
+  .btn-purple { background:linear-gradient(135deg,#7c3aed,#a855f7); transition:all 0.2s; }
+  .btn-purple:hover { opacity:0.9; transform:translateY(-1px);
+                      box-shadow:0 8px 24px rgba(139,92,246,0.4); }
+  .btn-green  { background:linear-gradient(135deg,#059669,#10b981); transition:all 0.2s; }
+  .btn-green:hover  { opacity:0.9; transform:translateY(-1px); }
+  .btn-orange { background:linear-gradient(135deg,#d97706,#f59e0b); transition:all 0.2s; }
+  .btn-orange:hover { opacity:0.9; transform:translateY(-1px); }
+  .btn-red    { background:linear-gradient(135deg,#dc2626,#ef4444); transition:all 0.2s; }
+  .btn-red:hover { opacity:0.9; transform:translateY(-1px); }
+  .exam-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+               transition:all 0.3s; border-radius:16px; }
+  .exam-card:hover { border-color:rgba(139,92,246,0.3);
+                     box-shadow:0 8px 32px rgba(139,92,246,0.1); }
+  .exam-card.removing {
+    opacity:0; transform:translateX(30px) scale(0.97);
+    transition:all 0.4s cubic-bezier(.4,0,.2,1);
+  }
+  .status-live { background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35);
+                 color:#34d399; }
+  .status-scheduled { background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.35);
+                      color:#fbbf24; }
+  .status-ended { background:rgba(107,114,128,0.15); border:1px solid rgba(107,114,128,0.35);
+                  color:#9ca3af; }
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:rgba(139,92,246,0.4); border-radius:4px; }
+  select.input-pro option { background:#1a1a2e; color:white; }
+  /* Toastify custom */
+  .toastify { font-family:'Inter',sans-serif !important; font-size:13px !important;
+              border-radius:14px !important; padding:12px 18px !important;
+              box-shadow:0 8px 32px rgba(0,0,0,0.4) !important; }
+</style>
+</head>
+<body class="min-h-screen text-gray-100">
+  <!-- ══ UNIVERSITY TOP BANNER ══ -->
+<div class="w-full border-b border-red-900/40 flex-shrink-0"
+  style="background:linear-gradient(135deg,rgba(4,30,66,0.98),rgba(60,10,10,0.95));
+         backdrop-filter:blur(20px)">
+  <div class="max-w-full px-4 py-2 flex items-center justify-between">
+
+    <div class="flex items-center gap-3">
+      <!-- Logo -->
+      <div class="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center
+        border border-red-600/30 shadow-lg flex-shrink-0">
+        <img src="/static/images/logo.png"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          alt="Logo" class="w-full h-full object-contain p-1"/>
+        <div class="hidden w-full h-full items-center justify-center bg-gradient-to-br from-blue-900 to-red-800">
+          <span class="text-white font-black text-sm">SU</span>
+        </div>
+      </div>
+      <div class="min-w-0">
+        <p class="text-white font-black text-xs sm:text-sm leading-tight tracking-wide">
+          SHOBHIT UNIVERSITY, GANGOH
+        </p>
+        <p class="text-red-300 text-[10px] tracking-wider font-medium">
+          Dept. of Computer Science & Technology · Faculty Portal
+        </p>
+      </div>
+    </div>
+
+    <div class="hidden md:flex items-center gap-4 text-[10px] text-gray-400">
+      <span class="flex items-center gap-1">
+        <i class="fas fa-shield-alt text-emerald-400"></i> NAAC A+ Accredited
+      </span>
+      <span class="flex items-center gap-1">
+        <i class="fas fa-graduation-cap text-blue-400"></i> ExamPro v2.0
+      </span>
+    </div>
+
+  </div>
+  <div class="h-0.5 bg-gradient-to-r from-transparent via-red-600 to-transparent opacity-50"></div>
+</div>
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar w-64 flex-shrink-0 flex-col hidden md:flex">
+    <div class="px-5 py-5 border-b border-white/5">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600
+          flex items-center justify-center">
+          <i class="fas fa-chalkboard-teacher text-white text-sm"></i>
+        </div>
+        <div>
+          <p class="font-bold text-white text-sm">ExamPro</p>
+          <p class="text-xs text-gray-500">Faculty Portal</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-4 py-4 border-b border-white/5">
+      <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl
+        bg-purple-500/8 border border-purple-500/15">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500
+          flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-user-tie text-white text-xs"></i>
+        </div>
+        <div class="min-w-0">
+          <p id="sidebar-name" class="text-white text-sm font-semibold truncate">Loading…</p>
+          <p class="text-purple-400 text-xs">Faculty</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+      <button onclick="showTab('exams')" id="nav-exams"
+        class="nav-item nav-active w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium">
+        <i class="fas fa-list w-4 text-center text-purple-400"></i> All Exams
+      </button>
+      <button onclick="showTab('create')" id="nav-create"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-400">
+        <i class="fas fa-plus w-4 text-center text-emerald-400"></i> Create Exam
+      </button>
+      <button onclick="showTab('questions')" id="nav-questions"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-400">
+        <i class="fas fa-question-circle w-4 text-center text-indigo-400"></i> Manage Questions
+      </button>
+      <button onclick="showTab('live')" id="nav-live"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-400">
+        <i class="fas fa-satellite-dish w-4 text-center text-red-400"></i> Live Feed
+        <span id="live-dot" class="hidden ml-auto w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+      </button>
+    </nav>
+
+    <div class="px-4 pb-5">
+      <button onclick="logout()"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+          text-red-400 hover:bg-red-500/10 transition-all border border-transparent
+          hover:border-red-500/20">
+        <i class="fas fa-sign-out-alt w-4 text-center"></i> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="border-b border-white/5 px-6 py-4 flex items-center justify-between flex-shrink-0"
+      style="background:rgba(2,2,12,0.9)">
+      <div>
+        <h1 class="text-lg font-bold text-white" id="page-title">All Exams</h1>
+        <p id="date-display" class="text-xs text-gray-500 mt-0.5"></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="showTab('create')"
+          class="btn-purple px-4 py-2 rounded-xl text-sm font-semibold text-white
+            flex items-center gap-2">
+          <i class="fas fa-plus"></i>
+          <span class="hidden sm:inline">New Exam</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-5">
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Total Exams</p>
+            <div class="w-8 h-8 rounded-xl bg-purple-500/15 flex items-center justify-center">
+              <i class="fas fa-file-alt text-purple-400 text-xs"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-black text-white" id="kpi-exams">—</p>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Live Now</p>
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+              <i class="fas fa-broadcast-tower text-emerald-400 text-xs"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-black text-emerald-400" id="kpi-live">0</p>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Scheduled</p>
+            <div class="w-8 h-8 rounded-xl bg-yellow-500/15 flex items-center justify-center">
+              <i class="fas fa-calendar text-yellow-400 text-xs"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-black text-yellow-400" id="kpi-scheduled">—</p>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">Ended</p>
+            <div class="w-8 h-8 rounded-xl bg-gray-500/15 flex items-center justify-center">
+              <i class="fas fa-flag-checkered text-gray-400 text-xs"></i>
+            </div>
+          </div>
+          <p class="text-3xl font-black text-gray-400" id="kpi-ended">—</p>
+        </div>
+      </div>
+
+      <!-- ══ TAB: ALL EXAMS ══ -->
+      <div id="tab-exams">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-white">All Exams</h3>
+          <button onclick="loadExams()"
+            class="text-xs text-gray-500 hover:text-white transition-colors flex items-center gap-1.5">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
+        </div>
+        <div id="exams-list" class="space-y-3">
+          <div class="glass rounded-2xl p-8 text-center text-gray-500">
+            <i class="fas fa-spinner fa-spin text-2xl mb-2 block"></i>Loading…
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: CREATE EXAM ══ -->
+      <div id="tab-create" class="hidden max-w-2xl">
+        <div class="glass2 rounded-2xl p-6">
+          <h3 class="text-base font-bold text-white mb-5 flex items-center gap-2">
+            <i class="fas fa-plus-circle text-purple-400"></i> Create New Exam
+          </h3>
+          <form onsubmit="createExam(event)" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
+                <label class="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">
+                  Exam Title <span class="text-red-400">*</span>
+                </label>
+                <input id="ef-title" required placeholder="e.g. Midterm Computer Science"
+                  class="input-pro w-full rounded-xl px-4 py-2.5 text-sm"/>
+              </div>
+              <div>
+                <label class="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">Subject</label>
+                <input id="ef-subject" placeholder="e.g. Computer Science"
+                  class="input-pro w-full rounded-xl px-4 py-2.5 text-sm"/>
+              </div>
+              <div>
+                <label class="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">
+                  Duration (minutes)
+                </label>
+                <input id="ef-duration" type="number" value="60" min="5"
+                  class="input-pro w-full rounded-xl px-4 py-2.5 text-sm"/>
+              </div>
+              <div>
+                <label class="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">
+                  Total Marks
+                </label>
+                <input id="ef-total" type="number" value="100" min="1"
+                  class="input-pro w-full rounded-xl px-4 py-2.5 text-sm"/>
+              </div>
+              <div>
+                <label class="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">
+                  Pass Marks
+                </label>
+                <input id="ef-pass" type="number" value="40" min="1"
+                  class="input-pro w-full rounded-xl px-4 py-2.5 text-sm"/>
+              </div>
+              <div>
+                <label class="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">
+                  Start Time <span class="text-red-400">*</span>
+                </label>
+                <input id="ef-start" required type="datetime-local"
+                  class="input-pro w-full rounded-xl px-4 py-2.5 text-sm"/>
+              </div>
+              <div>
+                <label class="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">
+                  End Time <span class="text-red-400">*</span>
+                </label>
+                <input id="ef-end" required type="datetime-local"
+                  class="input-pro w-full rounded-xl px-4 py-2.5 text-sm"/>
+              </div>
+            </div>
+            <div class="flex gap-3 pt-1">
+              <button type="submit" id="create-btn"
+                class="btn-purple px-6 py-2.5 rounded-xl text-white text-sm font-semibold
+                  flex items-center gap-2">
+                <i id="create-icon" class="fas fa-save"></i>
+                <span id="create-text">Create Exam</span>
+              </button>
+            </div>
+          </form>
+          <div id="create-success"
+            class="hidden mt-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25
+              flex items-center gap-3">
+            <i class="fas fa-check-circle text-emerald-400 text-lg flex-shrink-0"></i>
+            <div>
+              <p class="text-emerald-300 font-semibold text-sm">Exam created!</p>
+              <p class="text-emerald-400/70 text-xs mt-0.5">
+                ID: <strong id="created-id-display" class="font-mono"></strong>
+              </p>
+            </div>
+            <button onclick="showTab('questions')"
+              class="ml-auto px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500
+                text-white rounded-lg text-xs font-semibold">
+              Add Questions →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: MANAGE QUESTIONS ══ -->
+      <div id="tab-questions" class="hidden">
+        <div class="max-w-4xl space-y-5">
+          <div class="glass2 rounded-2xl p-5">
+            <h3 class="font-bold text-white mb-3 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-purple-600 text-white text-xs
+                flex items-center justify-center font-bold">1</span>
+              Select Exam
+            </h3>
+            <div class="flex gap-3 items-center flex-wrap">
+              <select id="q-exam-select"
+                class="input-pro flex-1 min-w-[200px] rounded-xl px-4 py-2.5 text-sm">
+                <option value="">— Choose an exam —</option>
+              </select>
+              <button onclick="loadQuestionsForExam()"
+                class="btn-purple px-4 py-2.5 rounded-xl text-white text-sm font-semibold
+                  flex items-center gap-2">
+                <i class="fas fa-arrow-right"></i> Load
+              </button>
+            </div>
+          </div>
+
+          <div id="q-step2" class="hidden space-y-4">
+            <div class="glass rounded-xl px-4 py-3 flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/15 flex items-center justify-center">
+                <i class="fas fa-file-alt text-indigo-400 text-xs"></i>
+              </div>
+              <div class="flex-1">
+                <p id="q-exam-name" class="text-white font-semibold text-sm">—</p>
+                <p id="q-exam-meta" class="text-gray-500 text-xs">—</p>
+              </div>
+              <span id="q-count-badge"
+                class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30
+                  px-2 py-0.5 rounded-full font-mono font-bold">0</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Upload -->
+              <div class="glass2 rounded-2xl p-5">
+                <h4 class="font-bold text-white mb-1 flex items-center gap-2 text-sm">
+                  <i class="fas fa-file-upload text-indigo-400"></i> Upload PDF / DOCX
+                </h4>
+                <p class="text-gray-500 text-xs mb-4">Extract questions from file</p>
+                <div id="drop-zone"
+                  class="border-2 border-dashed border-purple-500/30 rounded-2xl p-8 text-center
+                    mb-4 cursor-pointer hover:border-purple-500/60 hover:bg-purple-500/5 transition-all"
+                  onclick="document.getElementById('q-file').click()"
+                  ondragover="event.preventDefault();this.classList.add('border-purple-500')"
+                  ondragleave="this.classList.remove('border-purple-500')"
+                  ondrop="event.preventDefault();setFile(event.dataTransfer.files[0])">
+                  <i class="fas fa-cloud-upload-alt text-3xl text-purple-400 mb-3 block"></i>
+                  <p class="text-gray-300 text-sm font-medium">
+                    Drop file or <span class="text-purple-400 underline">browse</span>
+                  </p>
+                  <p class="text-gray-600 text-xs mt-1">PDF or DOCX</p>
+                  <p id="file-name" class="text-indigo-300 text-xs mt-2 font-mono hidden"></p>
+                </div>
+                <input type="file" id="q-file" accept=".pdf,.docx" class="hidden"
+                  onchange="setFile(this.files[0])"/>
+                <button onclick="parseAndImport()"
+                  class="w-full btn-purple py-2.5 rounded-xl text-white text-sm font-semibold
+                    flex items-center justify-center gap-2">
+                  <i id="parse-icon" class="fas fa-magic"></i>
+                  <span id="parse-text">Parse & Import</span>
+                </button>
+                <div id="parse-result"
+                  class="hidden mt-3 p-3 rounded-xl bg-emerald-500/10 border
+                    border-emerald-500/20 text-xs text-emerald-300"></div>
+              </div>
+
+              <!-- Manual -->
+              <div class="glass2 rounded-2xl p-5">
+                <h4 class="font-bold text-white mb-1 flex items-center gap-2 text-sm">
+                  <i class="fas fa-plus-circle text-emerald-400"></i> Add Manually
+                </h4>
+                <p class="text-gray-500 text-xs mb-4">Type a question directly</p>
+                <div class="space-y-3">
+                  <textarea id="mq-text" rows="3" placeholder="Question text…"
+                    class="input-pro w-full rounded-xl px-3 py-2.5 text-sm resize-none"></textarea>
+                  <div class="grid grid-cols-2 gap-3">
+                    <select id="mq-type" onchange="toggleMCQFields()"
+                      class="input-pro rounded-xl px-3 py-2.5 text-sm">
+                      <option value="subjective">Subjective</option>
+                      <option value="mcq">MCQ</option>
+                    </select>
+                    <input id="mq-marks" type="number" value="1" min="1"
+                      placeholder="Marks"
+                      class="input-pro rounded-xl px-3 py-2.5 text-sm text-center font-bold"/>
+                  </div>
+                  <div id="mcq-fields" class="hidden space-y-2">
+                    <textarea id="mq-options" rows="4"
+                      placeholder="Option A&#10;Option B&#10;Option C&#10;Option D"
+                      class="input-pro w-full rounded-xl px-3 py-2.5 text-sm resize-none"></textarea>
+                    <input id="mq-correct" type="text" placeholder="Correct option (exact text)"
+                      class="input-pro w-full rounded-xl px-3 py-2.5 text-sm"/>
+                  </div>
+                  <div id="subj-fields">
+                    <textarea id="mq-model" rows="2" placeholder="Model answer (optional)"
+                      class="input-pro w-full rounded-xl px-3 py-2.5 text-sm resize-none"></textarea>
+                  </div>
+                  <button onclick="addManualQuestion()"
+                    class="w-full btn-green py-2.5 rounded-xl text-white text-sm font-semibold
+                      flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i> Add Question
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Question list -->
+            <div class="glass2 rounded-2xl p-5">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-white flex items-center gap-2 text-sm">
+                  <i class="fas fa-list-ol text-indigo-400"></i> Question List
+                  <span id="q-list-count"
+                    class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30
+                      px-2 py-0.5 rounded-full font-mono">0</span>
+                </h4>
+                <div class="flex gap-2">
+                  <button onclick="clearAllQuestions()"
+                    class="text-xs text-red-400 hover:text-red-300 border border-red-500/20
+                      px-3 py-1.5 rounded-lg flex items-center gap-1">
+                    <i class="fas fa-trash"></i> Clear
+                  </button>
+                  <button onclick="saveAllQuestions()" id="save-all-btn"
+                    class="btn-green px-4 py-1.5 rounded-lg text-white text-xs font-bold
+                      flex items-center gap-1.5">
+                    <i id="save-icon" class="fas fa-save"></i>
+                    <span id="save-text">Save to Exam</span>
+                  </button>
+                </div>
+              </div>
+              <div id="q-editor-list" class="space-y-2 max-h-[55vh] overflow-y-auto pr-1">
+                <div class="text-center py-8 text-gray-600 text-sm">
+                  <i class="fas fa-inbox text-3xl mb-2 block text-gray-700"></i>
+                  No questions yet.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: LIVE FEED ══ -->
+      <div id="tab-live" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="glass2 rounded-2xl p-5">
+            <h3 class="font-bold text-white mb-4 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live Events
+            </h3>
+            <div id="live-events" class="space-y-2 max-h-[60vh] overflow-y-auto">
+              <p class="text-gray-600 text-xs text-center py-8">
+                <i class="fas fa-satellite-dish text-2xl block mb-2"></i>Waiting for events…
+              </p>
+            </div>
+          </div>
+          <div class="glass2 rounded-2xl p-5">
+            <h3 class="font-bold text-white mb-4 flex items-center gap-2">
+              <i class="fas fa-shield-alt text-red-400"></i> Violation Feed
+            </h3>
+            <div id="viol-feed" class="space-y-2 max-h-[60vh] overflow-y-auto">
+              <p class="text-gray-600 text-xs text-center py-8">
+                <i class="fas fa-shield-alt text-2xl block mb-2 text-gray-700"></i>
+                No violations yet.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="/static/js/toast.js"></script>
+<script src="/static/js/app.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+async function init() {
+  document.getElementById('date-display').textContent =
+    new Date().toLocaleDateString('en-US',
+      {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const me = await getMe();
+  if (!me) return;
+  document.getElementById('sidebar-name').textContent = me.name || me.username;
+
+  const now  = new Date();
+  const soon = new Date(now.getTime() + 5*60000);
+  const end  = new Date(now.getTime() + 65*60000);
+  document.getElementById('ef-start').value = toLocalDT(soon);
+  document.getElementById('ef-end').value   = toLocalDT(end);
+
+  await loadExams();
+  setupSocket();
+}
+
+function toLocalDT(d) {
+  return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+}
+
+// ══════════════════════════════════════════════════════════
+// SOCKET — REAL-TIME EVENTS
+// ══════════════════════════════════════════════════════════
+function setupSocket() {
+  socket.on('connect', () => console.log('[Socket] Connected'));
+
+  // Someone else started/stopped/deleted — refresh
+  socket.on('exam_started', d => {
+    toast(`Exam "${d.title || d.exam_id}" is now LIVE!`, 'live');
+    refreshExamCard(d.exam_id, 'live');
+    updateKPIs();
+    addLiveEvent(`Exam <strong>${d.title||d.exam_id}</strong> started`);
+  });
+
+  socket.on('exam_stopped', d => {
+    toast(`Exam "${d.title || d.exam_id}" has ENDED`, 'stop');
+    refreshExamCard(d.exam_id, 'ended');
+    updateKPIs();
+    addLiveEvent(`Exam <strong>${d.title||d.exam_id}</strong> stopped`);
+  });
+
+  socket.on('exam_deleted', d => {
+    toast(`Exam "${d.title || d.exam_id}" deleted`, 'delete');
+    removeExamCard(d.exam_id);
+    updateKPIs();
+    addLiveEvent(` Exam <strong>${d.title||d.exam_id}</strong> deleted`);
+  });
+
+  socket.on('submission_alert', d => {
+    addLiveEvent(`<strong>${d.username}</strong> submitted <code>${d.exam_id}</code>`);
+    document.getElementById('live-dot').classList.remove('hidden');
+  });
+
+  socket.on('violation_alert', d => {
+    addViolEvent(`<strong>${d.username}</strong>: ${d.type} (${d.count}×) — <code>${d.exam_id}</code>`);
+    document.getElementById('live-dot').classList.remove('hidden');
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ══════════════════════════════════════════════════════════
+const TAB_TITLES = {
+  exams:'All Exams', create:'Create Exam',
+  questions:'Manage Questions', live:'Live Feed'
+};
+
+function showTab(name) {
+  ['exams','create','questions','live'].forEach(t => {
+    document.getElementById(`tab-${t}`)?.classList.add('hidden');
+    const n = document.getElementById(`nav-${t}`);
+    if (n) { n.classList.remove('nav-active'); n.classList.add('text-gray-400'); }
+  });
+  document.getElementById(`tab-${name}`)?.classList.remove('hidden');
+  const nav = document.getElementById(`nav-${name}`);
+  if (nav) { nav.classList.add('nav-active'); nav.classList.remove('text-gray-400'); }
+  document.getElementById('page-title').textContent = TAB_TITLES[name] || name;
+  if (name === 'exams')     loadExams();
+  if (name === 'questions') populateExamSelect();
+}
+
+// ══════════════════════════════════════════════════════════
+// LOAD & RENDER EXAMS
+// ══════════════════════════════════════════════════════════
+async function loadExams() {
+  const { data } = await apiGet('/api/exams');
+  allExams = data || [];
+  renderExams(allExams);
+  updateKPIs();
+}
+
+function updateKPIs() {
+  document.getElementById('kpi-exams').textContent     = allExams.length;
+  document.getElementById('kpi-live').textContent      = allExams.filter(e=>e.status==='live').length;
+  document.getElementById('kpi-scheduled').textContent = allExams.filter(e=>e.status==='scheduled').length;
+  document.getElementById('kpi-ended').textContent     = allExams.filter(e=>e.status==='ended').length;
+}
+
+function renderExams(list) {
+  const el = document.getElementById('exams-list');
+  if (!list.length) {
+    el.innerHTML = `
+      <div class="glass rounded-2xl p-12 text-center text-gray-500">
+        <i class="fas fa-folder-open text-4xl mb-3 block text-gray-600"></i>
+        <p class="font-medium">No exams yet.</p>
+        <button onclick="showTab('create')"
+          class="mt-3 px-4 py-2 rounded-xl text-sm btn-purple text-white font-semibold
+            inline-flex items-center gap-2">
+          <i class="fas fa-plus"></i> Create First Exam
+        </button>
+      </div>`;
+    return;
+  }
+  el.innerHTML = list.map(ex => buildExamCard(ex)).join('');
+}
+
+function buildExamCard(ex) {
+  const statusLabel = ex.status.toUpperCase();
+  const statusCls   = ex.status === 'live'      ? 'status-live'
+                    : ex.status === 'scheduled'  ? 'status-scheduled'
+                    :                              'status-ended';
+  const liveDot = ex.status === 'live'
+    ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block mr-1"></span>'
+    : '';
+
+  return `
+    <div class="exam-card p-5" id="card-${ex.exam_id}">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <h4 class="text-white font-bold">${esc(ex.title)}</h4>
+            <span class="font-mono text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-lg">
+              ${ex.exam_id}
+            </span>
+            <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold ${statusCls}">
+              ${liveDot}${statusLabel}
+            </span>
+          </div>
+          <div class="flex flex-wrap gap-3 text-xs text-gray-500">
+            <span><i class="fas fa-book mr-1"></i>${esc(ex.subject)||'—'}</span>
+            <span><i class="fas fa-clock mr-1"></i>${ex.duration_mins} min</span>
+            <span><i class="fas fa-star mr-1"></i>${ex.total_marks} marks</span>
+            <span><i class="fas fa-calendar mr-1"></i>
+              ${new Date(ex.start_time).toLocaleString()}</span>
+          </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="flex flex-wrap gap-2 flex-shrink-0">
+
+          <!-- START (show when scheduled or ended) -->
+          ${ex.status !== 'live' ? `
+          <button onclick="startExam('${ex.exam_id}', '${esc(ex.title)}')"
+            class="btn-green px-3 py-1.5 rounded-lg text-xs font-bold text-white
+              flex items-center gap-1.5" title="Start Exam">
+            <i class="fas fa-play"></i> Start
+          </button>` : ''}
+
+          <!-- STOP (show only when live) -->
+          ${ex.status === 'live' ? `
+          <button onclick="stopExam('${ex.exam_id}', '${esc(ex.title)}')"
+            class="btn-orange px-3 py-1.5 rounded-lg text-xs font-bold text-white
+              flex items-center gap-1.5" title="Stop Exam">
+            <i class="fas fa-stop"></i> Stop
+          </button>` : ''}
+
+          <!-- QUESTIONS -->
+          <button onclick="goManageQ('${ex.exam_id}')"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-indigo-500/30
+              text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 transition-all
+              flex items-center gap-1.5">
+            <i class="fas fa-question-circle"></i> Questions
+          </button>
+
+          <!-- CHECK -->
+          <a href="/faculty/checking/${ex.exam_id}"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-blue-500/30
+              text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 transition-all
+              flex items-center gap-1.5">
+            <i class="fas fa-pen"></i> Check
+          </a>
+
+          <!-- ANALYTICS -->
+          <a href="/analytics/${ex.exam_id}"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-purple-500/30
+              text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 transition-all
+              flex items-center gap-1.5">
+            <i class="fas fa-chart-bar"></i> Analytics
+          </a>
+
+          <!-- PUBLISH -->
+          <button onclick="publishResults('${ex.exam_id}')"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-pink-500/30
+              text-pink-300 bg-pink-500/10 hover:bg-pink-500/20 transition-all
+              flex items-center gap-1.5">
+            <i class="fas fa-trophy"></i> Publish
+          </button>
+
+          <!-- DELETE -->
+          <button onclick="deleteExam('${ex.exam_id}', '${esc(ex.title)}')"
+            class="btn-red px-3 py-1.5 rounded-lg text-xs font-bold text-white
+              flex items-center gap-1.5" title="Delete Exam">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Refresh a single card's status without full reload ────────────────────
+function refreshExamCard(examId, newStatus) {
+  const idx = allExams.findIndex(e => e.exam_id === examId);
+  if (idx === -1) return;
+  allExams[idx].status = newStatus;
+  const card = document.getElementById(`card-${examId}`);
+  if (card) {
+    card.outerHTML = buildExamCard(allExams[idx]);
+  }
+  updateKPIs();
+}
+
+function removeExamCard(examId) {
+  const card = document.getElementById(`card-${examId}`);
+  if (card) {
+    card.classList.add('removing');
+    setTimeout(() => {
+      card.remove();
+      allExams = allExams.filter(e => e.exam_id !== examId);
+      updateKPIs();
+      if (!allExams.length) renderExams([]);
+    }, 400);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// EXAM ACTIONS
+// ══════════════════════════════════════════════════════════
+async function startExam(examId, title) {
+  const btn = event.currentTarget;
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  const { ok, data } = await apiPost(`/api/exams/${examId}/start`, {});
+  if (ok) {
+    toast(`"${title}" is now LIVE!`, 'live');
+    refreshExamCard(examId, 'live');
+    addLiveEvent(`🟢 You started <strong>${title}</strong>`);
+  } else {
+    toast(data.error || 'Failed to start exam', 'error');
+    btn.disabled  = false;
+    btn.innerHTML = '<i class="fas fa-play"></i> Start';
+  }
+}
+
+async function stopExam(examId, title) {
+  if (!confirm(`Stop exam "${title}"?\nAll active students will be auto-submitted.`)) return;
+
+  const btn = event.currentTarget;
+  btn.disabled  = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  const { ok, data } = await apiPost(`/api/exams/${examId}/stop`, {});
+  if (ok) {
+    toast(`"${title}" stopped. ${data.auto_submitted || 0} students auto-submitted.`, 'stop');
+    refreshExamCard(examId, 'ended');
+    addLiveEvent(`🔴 You stopped <strong>${title}</strong>`);
+  } else {
+    toast(data.error || 'Failed to stop exam', 'error');
+    btn.disabled  = false;
+    btn.innerHTML = '<i class="fas fa-stop"></i> Stop';
+  }
+}
+
+async function deleteExam(examId, title) {
+  if (!confirm(
+    `⚠️ DELETE "${title}"?\n\n` +
+    `This will permanently delete:\n` +
+    `• All questions\n• All student answers\n• All marks & results\n\n` +
+    `This CANNOT be undone!`
+  )) return;
+
+  const card = document.getElementById(`card-${examId}`);
+  if (card) card.style.opacity = '0.5';
+
+  const r = await fetch(`/api/exams/${examId}`, {
+    method: 'DELETE',
+    credentials: 'same-origin'
+  });
+  const d = await r.json();
+
+  if (r.ok) {
+    toast(`"${title}" deleted permanently`, 'delete');
+    removeExamCard(examId);
+    addLiveEvent(`🗑️ You deleted <strong>${title}</strong>`);
+  } else {
+    toast(d.error || 'Failed to delete exam', 'error');
+    if (card) card.style.opacity = '1';
+  }
+}
+
+async function publishResults(examId) {
+  if (!confirm(`Publish results for exam ${examId}?`)) return;
+  const { ok, data } = await apiPost(`/api/exams/${examId}/publish`, {});
+  if (ok) {
+    toast(data.message || 'Results published!', 'success');
+  } else {
+    toast(data.error || 'Failed to publish', 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// CREATE EXAM
+// ══════════════════════════════════════════════════════════
+async function createExam(e) {
+  e.preventDefault();
+  const btn  = document.getElementById('create-btn');
+  const icon = document.getElementById('create-icon');
+  const text = document.getElementById('create-text');
+  btn.disabled     = true;
+  icon.className   = 'fas fa-spinner fa-spin';
+  text.textContent = 'Creating…';
+
+  const start = document.getElementById('ef-start').value;
+  const end   = document.getElementById('ef-end').value;
+  if (new Date(end) <= new Date(start)) {
+    toast('End time must be after start time', 'error');
+    btn.disabled = false; icon.className = 'fas fa-save'; text.textContent = 'Create Exam';
+    return;
+  }
+
+  const r = await fetch('/api/exams', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({
+      title:           document.getElementById('ef-title').value.trim(),
+      subject:         document.getElementById('ef-subject').value.trim(),
+      duration_mins:   parseInt(document.getElementById('ef-duration').value),
+      total_marks:     parseInt(document.getElementById('ef-total').value),
+      pass_marks:      parseInt(document.getElementById('ef-pass').value),
+      start_time:      start,
+      end_time:        end,
+      randomize_q:     true,
+      randomize_o:     true,
+      violation_limit: 3
+    })
+  });
+  const d = await r.json();
+
+  if (r.ok) {
+    currentExamId = d.exam_id;
+    document.getElementById('created-id-display').textContent = d.exam_id;
+    document.getElementById('create-success').classList.remove('hidden');
+    toast(`Exam created! ID: ${d.exam_id}`, 'success');
+    icon.className = 'fas fa-check'; text.textContent = 'Created!';
+    await loadExams();
+  } else {
+    toast(d.error || 'Failed to create exam', 'error');
+    btn.disabled = false; icon.className = 'fas fa-save'; text.textContent = 'Create Exam';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// QUESTION MANAGEMENT
+// ══════════════════════════════════════════════════════════
+function populateExamSelect() {
+  const sel = document.getElementById('q-exam-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Choose an exam —</option>' +
+    allExams.map(e =>
+      `<option value="${e.exam_id}">${esc(e.title)} (${e.exam_id})</option>`
+    ).join('');
+  if (currentExamId && !cur) sel.value = currentExamId;
+}
+
+async function loadQuestionsForExam() {
+  const eid = document.getElementById('q-exam-select').value;
+  if (!eid) { toast('Please select an exam first', 'warning'); return; }
+  currentExamId = eid;
+  const exam = allExams.find(e => e.exam_id === eid);
+  document.getElementById('q-exam-name').textContent = exam ? exam.title : eid;
+  document.getElementById('q-exam-meta').textContent = exam
+    ? `${exam.subject||'—'} · ${exam.duration_mins}min · ${exam.total_marks} marks`
+    : '';
+  const { ok, data } = await apiGet(`/api/exams/${eid}/questions`);
+  questions = ok && Array.isArray(data)
+    ? data.map(q => ({
+        _id: q._id, text: q.text, type: q.type||'subjective',
+        marks: q.marks||1, options: q.options||[],
+        correct_option: q.correct_option||'', model_answer: q.model_answer||''
+      }))
+    : [];
+  document.getElementById('q-step2').classList.remove('hidden');
+  renderQuestionList();
+  toast(`Loaded ${questions.length} questions`, 'info');
+}
+
+function renderQuestionList() {
+  const el = document.getElementById('q-editor-list');
+  document.getElementById('q-list-count').textContent    = questions.length;
+  document.getElementById('q-count-badge').textContent   = questions.length;
+  if (!questions.length) {
+    el.innerHTML = `
+      <div class="text-center py-8 text-gray-600 text-sm">
+        <i class="fas fa-inbox text-3xl mb-2 block text-gray-700"></i>No questions yet.
+      </div>`;
+    return;
+  }
+  el.innerHTML = questions.map((q, i) => `
+    <div class="rounded-xl p-3.5 border border-white/7 bg-white/3 hover:border-indigo-500/30
+      transition-colors" id="qrow-${i}">
+      <div class="flex items-start gap-3">
+        <span class="w-6 h-6 rounded-lg text-xs font-bold flex items-center justify-center
+          flex-shrink-0 ${q.type==='mcq'?'bg-indigo-600/30 text-indigo-300':'bg-purple-600/30 text-purple-300'}">
+          ${i+1}
+        </span>
+        <div class="flex-1 min-w-0">
+          <textarea onchange="questions[${i}].text=this.value"
+            class="w-full bg-transparent text-white text-sm leading-relaxed resize-none
+              focus:outline-none rounded-lg px-1 py-0.5 hover:bg-white/3 transition-colors"
+            rows="2">${esc(q.text)}</textarea>
+          <div class="flex flex-wrap items-center gap-2 mt-1.5">
+            <select onchange="questions[${i}].type=this.value;renderQuestionList()"
+              class="bg-gray-800/80 border border-gray-700/50 rounded-lg px-2 py-1
+                text-xs text-white focus:outline-none">
+              <option value="subjective" ${q.type==='subjective'?'selected':''}>Subjective</option>
+              <option value="mcq"        ${q.type==='mcq'?'selected':''}>MCQ</option>
+            </select>
+            <div class="flex items-center gap-1">
+              <span class="text-xs text-gray-500">Marks:</span>
+              <input type="number" value="${q.marks}" min="1"
+                onchange="questions[${i}].marks=+this.value"
+                class="w-12 bg-gray-800/80 border border-gray-700/50 rounded-lg px-2 py-1
+                  text-xs text-white text-center focus:outline-none"/>
+            </div>
+            ${q.type==='mcq'?`
+            <div class="flex items-center gap-1">
+              <span class="text-xs text-gray-500">Correct:</span>
+              <input type="text" value="${esc(q.correct_option||'')}"
+                placeholder="Correct option"
+                onchange="questions[${i}].correct_option=this.value"
+                class="w-28 bg-gray-800/80 border border-gray-700/50 rounded-lg px-2 py-1
+                  text-xs text-white focus:outline-none"/>
+            </div>`:''}
+            <div class="flex gap-1 ml-auto">
+              ${i>0?`<button onclick="moveQ(${i},-1)"
+                class="w-6 h-6 rounded-lg bg-gray-700/50 hover:bg-gray-600/50
+                  text-gray-400 hover:text-white text-xs flex items-center justify-center">
+                <i class="fas fa-arrow-up"></i></button>`:''}
+              ${i<questions.length-1?`<button onclick="moveQ(${i},1)"
+                class="w-6 h-6 rounded-lg bg-gray-700/50 hover:bg-gray-600/50
+                  text-gray-400 hover:text-white text-xs flex items-center justify-center">
+                <i class="fas fa-arrow-down"></i></button>`:''}
+              <button onclick="deleteQ(${i})"
+                class="w-6 h-6 rounded-lg bg-red-500/10 hover:bg-red-500/25
+                  text-red-400 hover:text-red-300 text-xs flex items-center justify-center">
+                <i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+          ${q.type==='mcq'?`
+          <textarea onchange="questions[${i}].options=this.value.split('\\n').map(s=>s.trim()).filter(Boolean)"
+            rows="3" placeholder="Option A&#10;Option B&#10;Option C&#10;Option D"
+            class="mt-2 w-full bg-gray-800/60 border border-gray-700/40 rounded-lg px-3 py-2
+              text-xs text-white resize-none focus:outline-none placeholder-gray-600">
+${(q.options||[]).join('\n')}</textarea>`:`
+          <textarea onchange="questions[${i}].model_answer=this.value"
+            rows="2" placeholder="Model answer (optional)"
+            class="mt-2 w-full bg-gray-800/60 border border-gray-700/40 rounded-lg px-3 py-2
+              text-xs text-white resize-none focus:outline-none placeholder-gray-600">
+${esc(q.model_answer||'')}</textarea>`}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function moveQ(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= questions.length) return;
+  [questions[i], questions[j]] = [questions[j], questions[i]];
+  renderQuestionList();
+}
+function deleteQ(i) { questions.splice(i,1); renderQuestionList(); toast('Question removed','info'); }
+function clearAllQuestions() {
+  if (!confirm(`Clear all ${questions.length} questions?`)) return;
+  questions = []; renderQuestionList(); toast('Questions cleared','warning');
+}
+function toggleMCQFields() {
+  const isMCQ = document.getElementById('mq-type').value === 'mcq';
+  document.getElementById('mcq-fields').classList.toggle('hidden',  !isMCQ);
+  document.getElementById('subj-fields').classList.toggle('hidden', isMCQ);
+}
+function addManualQuestion() {
+  const text  = document.getElementById('mq-text').value.trim();
+  const type  = document.getElementById('mq-type').value;
+  const marks = parseInt(document.getElementById('mq-marks').value)||1;
+  if (!text) { toast('Question text is required','warning'); return; }
+  const q = { text, type, marks, options:[], correct_option:'', model_answer:'' };
+  if (type==='mcq') {
+    q.options        = document.getElementById('mq-options').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    q.correct_option = document.getElementById('mq-correct').value.trim();
+    if (q.options.length<2) { toast('Need at least 2 options','warning'); return; }
+  } else {
+    q.model_answer = document.getElementById('mq-model').value.trim();
+  }
+  questions.push(q);
+  renderQuestionList();
+  document.getElementById('mq-text').value = '';
+  document.getElementById('mq-options').value = '';
+  document.getElementById('mq-correct').value = '';
+  document.getElementById('mq-model').value = '';
+  toast(`Question ${questions.length} added`,'success');
+}
+
+function setFile(file) {
+  window._selectedFile = file;
+  const fn = document.getElementById('file-name');
+  fn.textContent = `📎 ${file.name}`;
+  fn.classList.remove('hidden');
+}
+
+async function parseAndImport() {
+  if (!currentExamId) { toast('Select an exam first','warning'); return; }
+  const file = window._selectedFile || document.getElementById('q-file').files[0];
+  if (!file) { toast('Please select a file first','warning'); return; }
+  const btn  = document.getElementById('parse-btn');
+  const icon = document.getElementById('parse-icon');
+  const text = document.getElementById('parse-text');
+  if(icon) icon.className = 'fas fa-spinner fa-spin';
+  if(text) text.textContent = 'Parsing…';
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch(`/api/exams/${currentExamId}/questions/upload`,
+      { method:'POST', body:fd, credentials:'same-origin' });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error||'Parse failed','error'); return; }
+    const newQs = parseTextToQuestions(d.text||'');
+    questions   = [...questions, ...newQs];
+    renderQuestionList();
+    document.getElementById('parse-result').innerHTML =
+      `✅ Imported <strong>${newQs.length}</strong> questions`;
+    document.getElementById('parse-result').classList.remove('hidden');
+    toast(`Imported ${newQs.length} questions from ${file.name}`,'success');
+  } catch(e) {
+    toast('Upload error: '+e.message,'error');
+  } finally {
+    if(icon) icon.className='fas fa-magic';
+    if(text) text.textContent='Parse & Import';
+  }
+}
+
+function parseTextToQuestions(text) {
+  const lines  = text.split('\n').map(l=>l.trim()).filter(l=>l.length>5);
+  const result = [];
+  const re     = /^(?:Q\.?\s*)?(\d+)[.)]\s+(.+)/i;
+  let cur = null, optBuf = [];
+  for (const line of lines) {
+    const nm  = line.match(re);
+    const isOpt = /^[a-d][.)]\s+/i.test(line);
+    if (nm) {
+      if (cur) {
+        if (optBuf.length>=2) { cur.options=optBuf.map(o=>o.replace(/^[a-d][.)]\s+/i,'').trim()); cur.type='mcq'; }
+        result.push(cur); optBuf=[];
+      }
+      cur = { text:nm[2].trim(), type:'subjective', marks:1, options:[], correct_option:'', model_answer:'' };
+    } else if (isOpt && cur) { optBuf.push(line); }
+  }
+  if (cur) {
+    if (optBuf.length>=2) { cur.options=optBuf.map(o=>o.replace(/^[a-d][.)]\s+/i,'').trim()); cur.type='mcq'; }
+    result.push(cur);
+  }
+  if (!result.length) return lines.filter(l=>l.length>8)
+    .map(l=>({text:l,type:'subjective',marks:1,options:[],correct_option:'',model_answer:''}));
+  return result;
+}
+
+async function saveAllQuestions() {
+  if (!currentExamId) { toast('No exam selected','warning'); return; }
+  if (!questions.length) { toast('No questions to save','warning'); return; }
+  const invalid = [];
+  questions.forEach((q,i) => {
+    if (q.type==='mcq') {
+      if (!q.options||q.options.length<2) invalid.push(`Q${i+1}: needs 2+ options`);
+      if (!q.correct_option?.trim()) invalid.push(`Q${i+1}: correct option not set`);
+    }
+  });
+  if (invalid.length) { toast('Fix: '+invalid[0],'warning'); return; }
+  const btn  = document.getElementById('save-all-btn');
+  const icon = document.getElementById('save-icon');
+  const text = document.getElementById('save-text');
+  btn.disabled=true; icon.className='fas fa-spinner fa-spin'; text.textContent='Saving…';
+  const r = await fetch(`/api/exams/${currentExamId}/questions`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    credentials:'same-origin',
+    body: JSON.stringify({ questions: questions.map((q,i)=>({
+      index:i, type:q.type, text:(q.text||'').trim(), marks:parseInt(q.marks)||1,
+      options: q.type==='mcq'?(q.options||[]).map(o=>o.trim()).filter(Boolean):[],
+      correct_option: q.type==='mcq'?(q.correct_option||'').trim():null,
+      model_answer: q.type==='subjective'?(q.model_answer||'').trim():''
+    }))})
+  });
+  const d = await r.json();
+  if (r.ok) {
+    toast(d.message||'Questions saved!','success');
+    icon.className='fas fa-check'; text.textContent='Saved!';
+    setTimeout(()=>{ icon.className='fas fa-save'; text.textContent='Save to Exam'; btn.disabled=false; },2000);
+  } else {
+    toast(d.error||'Save failed','error');
+    btn.disabled=false; icon.className='fas fa-save'; text.textContent='Save to Exam';
+  }
+}
+function goManageQ(eid) { showTab('questions'); setTimeout(()=>{ document.getElementById('q-exam-select').value=eid; loadQuestionsForExam(); },100); }
+
+// ══════════════════════════════════════════════════════════
+// LIVE FEED
+// ══════════════════════════════════════════════════════════
+function addLiveEvent(html) {
+  const el = document.getElementById('live-events');
+  const d  = document.createElement('div');
+  d.className = 'bg-gray-800/50 border border-gray-700/30 rounded-xl px-3 py-2.5 text-xs text-gray-300';
+  d.innerHTML = `<span class="text-gray-600 mr-2">${new Date().toLocaleTimeString()}</span>${html}`;
+  if (el.children[0]?.tagName==='P') el.innerHTML='';
+  el.insertBefore(d, el.firstChild);
+}
+function addViolEvent(html) {
+  const el = document.getElementById('viol-feed');
+  const d  = document.createElement('div');
+  d.className = 'bg-red-900/15 border border-red-700/25 rounded-xl px-3 py-2.5 text-xs text-red-300';
+  d.innerHTML = `<span class="text-gray-600 mr-2">${new Date().toLocaleTimeString()}</span>⚠️ ${html}`;
+  if (el.children[0]?.tagName==='P') el.innerHTML='';
+  el.insertBefore(d, el.firstChild);
+}
+
+// ══════════════════════════════════════════════════════════
+// UTIL
+// ══════════════════════════════════════════════════════════
+function esc(str) {
+  if (str==null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+init();
+</script>
+</body>
+</html>

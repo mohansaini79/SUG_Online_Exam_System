@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Answer Checking – ExamPro</title>
+<!-- results.html — </head> se pehle add karo -->
+<script src="/static/js/toast.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<style>
+  body { background: #0a0a0f; }
+  .glass { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  .input-field { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); color: white; }
+  .input-field:focus { outline: none; border-color: #818cf8; }
+  .student-item { transition: all 0.15s; }
+  .student-item:hover { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); }
+  .student-active { background: rgba(99,102,241,0.25) !important; border-color: #6366f1 !important; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 4px; }
+</style>
+</head>
+<body class="min-h-screen text-gray-100">
+<div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2"></div>
+
+<!-- Navbar -->
+<nav class="border-b border-gray-800 px-6 py-4 flex items-center gap-4 sticky top-0 z-50 backdrop-blur-md"
+  style="background:rgba(10,10,15,0.92)">
+  <a href="/faculty/dashboard" class="w-8 h-8 flex items-center justify-center rounded-lg
+    bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-all">
+    <i class="fas fa-arrow-left text-sm"></i>
+  </a>
+  <div class="flex items-center gap-2">
+    <div class="w-8 h-8 bg-indigo-600/30 rounded-lg flex items-center justify-center">
+      <i class="fas fa-pen-alt text-indigo-400 text-sm"></i>
+    </div>
+    <h1 class="text-white font-bold">Answer Checking</h1>
+  </div>
+  <span class="text-xs bg-indigo-900/50 text-indigo-300 px-2.5 py-1 rounded-full
+    font-mono border border-indigo-700/40">{{ exam_id }}</span>
+  <button onclick="refreshAll()"
+    class="ml-auto text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1.5">
+    <i class="fas fa-sync-alt"></i> Refresh
+  </button>
+</nav>
+
+<!-- Layout -->
+<div class="flex h-[calc(100vh-65px)]">
+
+  <!-- ── LEFT: Student list ─────────────────────────────────────────────── -->
+  <div class="w-72 flex-shrink-0 border-r border-gray-800 flex flex-col"
+    style="background:rgba(10,10,15,0.6)">
+
+    <!-- Search -->
+    <div class="p-4 border-b border-gray-800">
+      <div class="relative">
+        <i class="fas fa-search absolute left-3 top-2.5 text-gray-500 text-xs"></i>
+        <input id="search-input" type="text" placeholder="Search students…"
+          oninput="filterStudents(this.value)"
+          class="w-full bg-gray-800/60 border border-gray-700 rounded-xl pl-8 pr-3 py-2
+            text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"/>
+      </div>
+      <div class="flex items-center justify-between mt-2">
+        <span class="text-xs text-gray-500">Submissions</span>
+        <span id="sub-count" class="text-xs bg-indigo-900/50 text-indigo-300
+          px-2 py-0.5 rounded-full border border-indigo-700/40">0</span>
+      </div>
+    </div>
+
+    <!-- Student list -->
+    <div id="student-list" class="flex-1 overflow-y-auto p-3 space-y-1.5">
+      <div class="text-center py-10 text-gray-500 text-sm">
+        <i class="fas fa-spinner fa-spin text-2xl mb-2 block"></i>Loading…
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Answer panel ────────────────────────────────────────────── -->
+  <div class="flex-1 overflow-y-auto p-6">
+    <div id="answer-panel">
+      <div class="flex items-center justify-center h-full min-h-[60vh]">
+        <div class="text-center text-gray-500">
+          <div class="w-20 h-20 bg-gray-800/60 rounded-3xl flex items-center justify-center
+            mx-auto mb-5">
+            <i class="fas fa-hand-pointer text-3xl text-gray-600"></i>
+          </div>
+          <p class="text-lg font-medium text-gray-400">Select a student</p>
+          <p class="text-sm mt-1">Click a name from the left panel to review their answers</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script src="/static/js/app.js"></script>
+<script>
+const EXAM_ID    = '{{ exam_id }}';
+let allQuestions = [];
+let allSubs      = [];
+let currentUid   = null;
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  await refreshAll();
+}
+
+async function refreshAll() {
+  const [qRes, sRes] = await Promise.all([
+    apiGet(`/api/exams/${EXAM_ID}/questions`),
+    apiGet(`/api/exams/${EXAM_ID}/submissions`)
+  ]);
+  allQuestions = qRes.data  || [];
+  allSubs      = sRes.data  || [];
+  renderStudentList(allSubs);
+  if (currentUid) {
+    const sub = allSubs.find(s => s.user_id === currentUid);
+    if (sub) selectStudent(currentUid, sub.student_name, sub.roll_number);
+  }
+}
+
+// ── Student list ───────────────────────────────────────────────────────────
+function renderStudentList(subs) {
+  document.getElementById('sub-count').textContent = subs.length;
+  const el = document.getElementById('student-list');
+  if (!subs.length) {
+    el.innerHTML = `
+      <div class="text-center py-10 text-gray-500 text-sm">
+        <i class="fas fa-inbox text-2xl mb-2 block text-gray-600"></i>
+        No submissions yet.
+      </div>`;
+    return;
+  }
+  el.innerHTML = subs.map(s => `
+    <button onclick="selectStudent('${escapeHtml(s.user_id)}','${escapeHtml(s.student_name)}','${escapeHtml(s.roll_number)}')"
+      id="btn-${s.user_id}"
+      class="student-item w-full text-left px-3 py-2.5 rounded-xl
+        border border-gray-700/40 cursor-pointer">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-600/20
+          flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-user text-indigo-400 text-xs"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-white text-sm font-medium truncate">${escapeHtml(s.student_name) || 'Unknown'}</p>
+          <p class="text-gray-400 text-xs">${escapeHtml(s.roll_number) || s.user_id.slice(-8)}</p>
+        </div>
+        <i class="fas fa-chevron-right text-gray-600 text-xs ml-auto flex-shrink-0"></i>
+      </div>
+    </button>`).join('');
+}
+
+function filterStudents(query) {
+  const q      = query.toLowerCase();
+  const filtered = allSubs.filter(s =>
+    (s.student_name || '').toLowerCase().includes(q) ||
+    (s.roll_number  || '').toLowerCase().includes(q)
+  );
+  renderStudentList(filtered);
+}
+
+// ── Select student ─────────────────────────────────────────────────────────
+async function selectStudent(uid, name, roll) {
+  // Highlight
+  document.querySelectorAll('.student-item').forEach(b => b.classList.remove('student-active'));
+  document.getElementById(`btn-${uid}`)?.classList.add('student-active');
+  currentUid = uid;
+
+  // Fetch marks
+  const { data: marks } = await apiGet(`/api/exams/${EXAM_ID}/marks/${uid}`);
+
+  // Find answers
+  const sub     = allSubs.find(s => s.user_id === uid);
+  const answers = sub?.answers || {};
+
+  // Render panel
+  const panel = document.getElementById('answer-panel');
+  panel.innerHTML = `
+    <!-- Header -->
+    <div class="glass rounded-2xl p-5 mb-5">
+      <div class="flex flex-col md:flex-row md:items-center gap-4">
+        <div class="flex items-center gap-3 flex-1">
+          <div class="w-12 h-12 bg-indigo-600/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-user-graduate text-indigo-400 text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">${escapeHtml(name) || 'Unknown'}</h2>
+            <div class="flex items-center gap-3 mt-0.5 text-sm text-gray-400">
+              <span><i class="fas fa-id-card mr-1"></i>${escapeHtml(roll) || '—'}</span>
+              <span class="text-emerald-400">
+                <i class="fas fa-check-circle mr-1"></i>Auto: <strong>${marks?.auto_marks ?? 0}</strong>
+              </span>
+              <span class="text-indigo-400">
+                <i class="fas fa-pen mr-1"></i>Manual: <strong id="manual-display">${marks?.manual_marks ?? 0}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- Mark input -->
+        <div class="flex items-end gap-3 flex-shrink-0">
+          <div>
+            <label class="text-xs text-gray-400 block mb-1.5 uppercase tracking-wide">
+              Manual Marks
+            </label>
+            <input type="number" id="manual-marks"
+              value="${marks?.manual_marks ?? 0}" min="0"
+              class="w-28 bg-gray-800 border border-gray-600 rounded-xl px-3 py-2.5
+                text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"/>
+          </div>
+          <button onclick="saveMarks()"
+            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl
+              text-sm font-semibold transition-all flex items-center gap-2">
+            <i class="fas fa-save"></i> Save Marks
+          </button>
+        </div>
+      </div>
+
+      <!-- Remarks -->
+      <div class="mt-4 pt-4 border-t border-gray-700/50">
+        <label class="text-xs text-gray-400 uppercase tracking-wide mb-1.5 block">
+          <i class="fas fa-comment-alt mr-1"></i>Remarks
+        </label>
+        <textarea id="remarks" rows="2"
+          placeholder="Add remarks or feedback for this student…"
+          class="w-full bg-gray-800/60 border border-gray-700 rounded-xl px-4 py-2.5
+            text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500
+            resize-none transition-colors">${escapeHtml(marks?.remarks || '')}</textarea>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="glass rounded-xl p-3 text-center">
+        <p class="text-xs text-gray-400 mb-1">Questions</p>
+        <p class="text-xl font-bold text-white">${allQuestions.length}</p>
+      </div>
+      <div class="glass rounded-xl p-3 text-center">
+        <p class="text-xs text-gray-400 mb-1">Answered</p>
+        <p class="text-xl font-bold text-yellow-400">
+          ${Object.values(answers).filter(v => v && v !== '').length}
+        </p>
+      </div>
+      <div class="glass rounded-xl p-3 text-center">
+        <p class="text-xs text-gray-400 mb-1">Skipped</p>
+        <p class="text-xl font-bold text-red-400">
+          ${allQuestions.length - Object.values(answers).filter(v => v && v !== '').length}
+        </p>
+      </div>
+    </div>
+
+    <!-- Q&A list -->
+    <div class="space-y-4" id="qa-list"></div>
+  `;
+
+  // Render questions
+  const qaList = document.getElementById('qa-list');
+  if (!allQuestions.length) {
+    qaList.innerHTML = `
+      <div class="glass rounded-xl p-8 text-center text-gray-500 text-sm">
+        <i class="fas fa-question-circle text-2xl mb-2 block"></i>
+        No questions found for this exam.
+      </div>`;
+    return;
+  }
+
+  qaList.innerHTML = allQuestions.map((q, i) => {
+    const qid        = q._id;
+    const studentAns = answers[qid];
+    const modelAns   = q.model_answer || q.correct_option || null;
+    const isCorrect  = q.type === 'mcq' && studentAns && modelAns && studentAns === modelAns;
+    const isWrong    = q.type === 'mcq' && studentAns && modelAns && studentAns !== modelAns;
+    const notAnswered= !studentAns || studentAns === '';
+
+    return `
+      <div class="glass rounded-2xl p-5 border ${
+        isCorrect   ? 'border-emerald-600/30' :
+        isWrong     ? 'border-red-600/30' :
+        notAnswered ? 'border-gray-700/30' : 'border-gray-700/30'
+      }">
+        <!-- Question -->
+        <div class="flex gap-3 mb-4">
+          <div class="flex-shrink-0 flex items-start gap-2">
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full
+              ${q.type === 'mcq'
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-600/20'
+                : 'bg-purple-600/30 text-purple-300 border border-purple-600/20'}">
+              ${i + 1}
+            </span>
+            <span class="text-xs px-2 py-0.5 rounded-full
+              bg-gray-700/60 text-gray-400 border border-gray-600/30 uppercase">
+              ${q.type}
+            </span>
+          </div>
+          <p class="text-gray-100 text-sm leading-relaxed flex-1">${escapeHtml(q.text)}</p>
+          <span class="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">
+            ${q.marks} mark${q.marks > 1 ? 's' : ''}
+          </span>
+        </div>
+
+        <!-- MCQ options (if applicable) -->
+        ${q.type === 'mcq' && q.options?.length ? `
+          <div class="grid grid-cols-2 gap-2 mb-4">
+            ${q.options.map(opt => `
+              <div class="px-3 py-2 rounded-lg text-xs border
+                ${opt === modelAns   ? 'bg-emerald-900/30 border-emerald-600/40 text-emerald-300' :
+                  opt === studentAns && opt !== modelAns ? 'bg-red-900/30 border-red-600/40 text-red-300' :
+                  'bg-gray-800/40 border-gray-700/30 text-gray-400'}">
+                ${opt === modelAns ? '✓ ' : opt === studentAns && opt !== modelAns ? '✗ ' : ''}
+                ${escapeHtml(opt)}
+              </div>`).join('')}
+          </div>` : ''}
+
+        <!-- Answers comparison -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div class="rounded-xl p-3 ${
+            isCorrect ? 'bg-emerald-900/20 border border-emerald-700/30' :
+            isWrong   ? 'bg-red-900/20 border border-red-700/30' :
+            notAnswered ? 'bg-gray-800/30 border border-gray-700/20' :
+            'bg-gray-800/40 border border-gray-700/30'
+          }">
+            <p class="text-gray-400 uppercase tracking-wide text-[10px] mb-1.5 flex items-center gap-1">
+              <i class="fas fa-user"></i> Student Answer
+            </p>
+            <p class="${
+              isCorrect   ? 'text-emerald-400' :
+              isWrong     ? 'text-red-400' :
+              notAnswered ? 'text-gray-500 italic' : 'text-yellow-300'
+            }">
+              ${notAnswered
+                ? 'Not answered'
+                : escapeHtml(studentAns)}
+              ${isCorrect ? ' ✅' : isWrong ? ' ❌' : ''}
+            </p>
+          </div>
+          <div class="rounded-xl p-3 bg-emerald-900/10 border border-emerald-700/20">
+            <p class="text-gray-400 uppercase tracking-wide text-[10px] mb-1.5 flex items-center gap-1">
+              <i class="fas fa-key"></i> Model Answer
+            </p>
+            <p class="${modelAns ? 'text-emerald-300' : 'text-gray-500 italic'}">
+              ${modelAns ? escapeHtml(modelAns) : 'Not set by faculty'}
+            </p>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Save marks ─────────────────────────────────────────────────────────────
+async function saveMarks() {
+  if (!currentUid) {
+    showToast('warning', 'Select a student first'); return;
+  }
+  const manual_marks = parseInt(document.getElementById('manual-marks')?.value) || 0;
+  const remarks      = document.getElementById('remarks')?.value || '';
+
+  const { ok, data } = await apiPut(`/api/exams/${EXAM_ID}/marks/${currentUid}`,
+    { manual_marks, remarks });
+
+  if (ok) {
+    showToast('success', `✅ ${data.message || 'Marks saved successfully'}`);
+    document.getElementById('manual-display').textContent = manual_marks;
+  } else {
+    showToast('error', '❌ ' + (data.error || 'Failed to save marks'));
+  }
+}
+
+// ── Util ───────────────────────────────────────────────────────────────────
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+init();
+</script>
+</body>
+</html>

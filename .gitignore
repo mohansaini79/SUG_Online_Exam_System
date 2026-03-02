@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.db
+.DS_Store
+check_answer.py
+fix_marks.py
+tes.py

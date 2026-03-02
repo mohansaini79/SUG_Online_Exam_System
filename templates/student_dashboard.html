@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Student Dashboard – ExamPro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- results.html — </head> se pehle add karo -->
+<script src="/static/js/toast.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+<!-- Toastify -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * { font-family:'Inter',sans-serif; }
+  body { background:#020208; }
+  .glass  { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); }
+  .glass2 { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.10); }
+  .sidebar { background:rgba(2,2,12,0.98); border-right:1px solid rgba(255,255,255,0.06); }
+  .nav-item { transition:all 0.15s; border-radius:12px; cursor:pointer; }
+  .nav-item:hover { background:rgba(139,92,246,0.12); color:white; }
+  .nav-active     { background:rgba(139,92,246,0.18)!important; color:white!important;
+                    border:1px solid rgba(139,92,246,0.25); }
+  .exam-card {
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+    transition:all 0.3s; border-radius:18px;
+  }
+  .exam-card:hover { border-color:rgba(139,92,246,0.3);
+                     box-shadow:0 8px 32px rgba(139,92,246,0.12); }
+  .exam-card.card-removing {
+    opacity:0; transform:scale(0.95) translateY(-8px);
+    transition:all 0.4s cubic-bezier(.4,0,.2,1);
+  }
+  .btn-enter { background:linear-gradient(135deg,#6366f1,#8b5cf6); transition:all 0.2s; }
+  .btn-enter:hover { opacity:0.9; transform:translateY(-1px); }
+  .btn-enter:disabled { opacity:0.35; cursor:not-allowed; transform:none; }
+  .live-badge {
+    background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35);
+    color:#34d399; animation:pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  .ended-badge {
+    background:rgba(107,114,128,0.15); border:1px solid rgba(107,114,128,0.3);
+    color:#9ca3af;
+  }
+  .scheduled-badge {
+    background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3);
+    color:#fbbf24;
+  }
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:rgba(139,92,246,0.4); border-radius:4px; }
+  .toastify { font-family:'Inter',sans-serif !important; font-size:13px !important;
+              border-radius:14px !important; padding:12px 18px !important; }
+</style>
+</head>
+<body class="min-h-screen text-gray-100">
+  <!-- ══ UNIVERSITY TOP BANNER ══ -->
+<div class="w-full border-b border-red-900/40 flex-shrink-0"
+  style="background:linear-gradient(135deg,rgba(4,30,66,0.98),rgba(60,10,10,0.95));
+         backdrop-filter:blur(20px)">
+  <div class="max-w-full px-4 py-2 flex items-center justify-between">
+
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center
+        border border-red-600/30 shadow-lg flex-shrink-0">
+        <img src="/static/images/logo.png"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          alt="Logo" class="w-full h-full object-contain p-1"/>
+        <div class="hidden w-full h-full items-center justify-center bg-gradient-to-br from-blue-900 to-red-800">
+          <span class="text-white font-black text-sm">SUG</span>
+        </div>
+      </div>
+      <div>
+        <p class="text-white font-black text-xs sm:text-sm leading-tight tracking-wide">
+          SHOBHIT UNIVERSITY, GANGOH
+        </p>
+        <p class="text-red-300 text-[10px] tracking-wider font-medium">
+          Dept. of Computer Science & Technology · Student Portal
+        </p>
+      </div>
+    </div>
+
+    <div class="hidden md:flex items-center gap-4 text-[10px] text-gray-400">
+      <span class="flex items-center gap-1">
+        <i class="fas fa-shield-alt text-emerald-400"></i> NAAC A Accredited
+      </span>
+      <span class="flex items-center gap-1">
+        <i class="fas fa-robot text-purple-400"></i> AI-Powered Grading
+      </span>
+    </div>
+
+  </div>
+  <div class="h-0.5 bg-gradient-to-r from-transparent via-red-600 to-transparent opacity-50"></div>
+</div>
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar w-64 flex-shrink-0 flex-col hidden md:flex">
+    <div class="px-5 py-5 border-b border-white/5">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600
+          flex items-center justify-center">
+          <i class="fas fa-graduation-cap text-white text-sm"></i>
+        </div>
+        <div>
+          <p class="font-bold text-white text-sm">ExamPro</p>
+          <p class="text-xs text-gray-500">Student Portal</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-4 py-4 border-b border-white/5">
+      <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl
+        bg-indigo-500/8 border border-indigo-500/15">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500
+          flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-user text-white text-xs"></i>
+        </div>
+        <div class="min-w-0">
+          <p id="sidebar-name" class="text-white text-sm font-semibold truncate">Loading…</p>
+          <p class="text-indigo-400 text-xs">Student</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 px-4 py-4 space-y-1">
+      <button onclick="showTab('exams')" id="nav-exams"
+        class="nav-item nav-active w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium">
+        <i class="fas fa-file-alt w-4 text-center text-indigo-400"></i> My Exams
+      </button>
+      <button onclick="showTab('results')" id="nav-results"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-400">
+        <i class="fas fa-trophy w-4 text-center text-yellow-400"></i> My Results
+      </button>
+    </nav>
+
+    <div class="px-4 pb-5">
+      <button onclick="logout()"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+          text-red-400 hover:bg-red-500/10 transition-all">
+        <i class="fas fa-sign-out-alt w-4 text-center"></i> Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="border-b border-white/5 px-6 py-4 flex items-center justify-between flex-shrink-0"
+      style="background:rgba(2,2,12,0.9)">
+      <div>
+        <h1 class="text-lg font-bold text-white">Student Dashboard</h1>
+        <p id="date-display" class="text-xs text-gray-500 mt-0.5"></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- Live indicator -->
+        <div id="live-indicator"
+          class="hidden items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10
+            border border-emerald-500/20 px-3 py-1.5 rounded-full">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Live
+        </div>
+        <button onclick="loadExams()"
+          class="glass px-3 py-1.5 rounded-xl text-xs text-gray-400 hover:text-white
+            transition-colors flex items-center gap-1.5">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-5">
+
+      <!-- Welcome bar -->
+      <div class="glass2 rounded-2xl p-4 mb-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20
+          border border-indigo-500/20 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-graduation-cap text-indigo-400 text-xl"></i>
+        </div>
+        <div class="flex-1">
+          <p class="text-white font-bold text-lg" id="welcome-msg">Hello! 👋</p>
+          <p class="text-gray-500 text-sm">Ready to take your next exam?</p>
+        </div>
+      </div>
+
+      <!-- KPI row -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <div class="glass rounded-2xl p-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Total Exams</p>
+          <p class="text-3xl font-black text-white" id="kpi-total">—</p>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Live Now</p>
+          <p class="text-3xl font-black text-emerald-400" id="kpi-live">0</p>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Results</p>
+          <p class="text-3xl font-black text-purple-400" id="kpi-results">—</p>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Best Rank</p>
+          <p class="text-3xl font-black text-yellow-400" id="kpi-rank">—</p>
+        </div>
+      </div>
+
+      <!-- ══ TAB: MY EXAMS ══ -->
+      <div id="tab-exams">
+        <h3 class="font-bold text-white mb-4 flex items-center gap-2">
+          <i class="fas fa-list-alt text-indigo-400"></i> Available Exams
+        </h3>
+        <div id="exams-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div class="glass rounded-2xl p-8 text-center text-gray-500 col-span-full">
+            <i class="fas fa-spinner fa-spin text-2xl mb-2 block"></i>Loading exams…
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TAB: MY RESULTS ══ -->
+      <div id="tab-results" class="hidden">
+        <h3 class="font-bold text-white mb-4 flex items-center gap-2">
+          <i class="fas fa-trophy text-yellow-400"></i> My Results
+        </h3>
+        <div id="results-list" class="space-y-3">
+          <div class="glass rounded-2xl p-8 text-center text-gray-500">
+            <i class="fas fa-spinner fa-spin text-2xl mb-2 block"></i>Loading results…
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="/static/js/toast.js"></script>
+<script src="/static/js/app.js"></script>
+<script>
+const socket = io({ transports: ['websocket','polling'] });
+let allExams  = [];
+let myResults = [];
+
+// ══════════════════════════════════════════════════════════
+// TOASTIFY HELPER
+// ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+async function init() {
+  document.getElementById('date-display').textContent =
+    new Date().toLocaleDateString('en-US',
+      {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  const me = await getMe();
+  if (!me) return;
+
+  const firstName = (me.name||'Student').split(' ')[0];
+  document.getElementById('sidebar-name').textContent = me.name||me.username;
+  document.getElementById('welcome-msg').textContent  = `Hello, ${firstName}! 👋`;
+
+  await Promise.all([loadExams(), loadResults()]);
+  setupSocket();
+}
+
+// ══════════════════════════════════════════════════════════
+// SOCKET — REAL-TIME EVENTS
+// ══════════════════════════════════════════════════════════
+function setupSocket() {
+  socket.on('connect', () => {
+    console.log('[Socket] Connected');
+    document.getElementById('live-indicator').classList.remove('hidden');
+    document.getElementById('live-indicator').style.display = 'flex';
+  });
+
+  socket.on('disconnect', () => {
+    document.getElementById('live-indicator').style.display = 'none';
+  });
+
+  // ── EXAM STARTED ──────────────────────────────────────
+  socket.on('exam_started', d => {
+    console.log('[Socket] exam_started:', d);
+    toast(`"${d.title || d.exam_id}" is now LIVE! Click Enter Exam.`, 'live');
+
+    // Update card instantly
+    const idx = allExams.findIndex(e => e.exam_id === d.exam_id);
+    if (idx !== -1) {
+      allExams[idx].status = 'live';
+      updateExamCard(allExams[idx]);
+    } else {
+      // New exam we didn't have — reload
+      loadExams();
+    }
+    updateStudentKPIs();
+  });
+
+  // ── EXAM STOPPED ──────────────────────────────────────
+  socket.on('exam_stopped', d => {
+    console.log('[Socket] exam_stopped:', d);
+    toast(`"${d.title || d.exam_id}" has ended.`, 'stop');
+
+    const idx = allExams.findIndex(e => e.exam_id === d.exam_id);
+    if (idx !== -1) {
+      allExams[idx].status = 'ended';
+      updateExamCard(allExams[idx]);
+    }
+    updateStudentKPIs();
+  });
+
+  // ── EXAM DELETED ──────────────────────────────────────
+  socket.on('exam_deleted', d => {
+    console.log('[Socket] exam_deleted:', d);
+    toast(`Exam "${d.title || d.exam_id}" has been removed.`, 'delete');
+    removeExamCard(d.exam_id);
+    updateStudentKPIs();
+  });
+
+  // ── RESULT PUBLISHED ──────────────────────────────────
+  socket.on('result_published', d => {
+    toast(`���� Results published for exam ${d.exam_id}!`, 'info');
+    loadResults();
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// TAB NAVIGATION
+// ══════════════════════════════════════════════════════════
+function showTab(name) {
+  ['exams','results'].forEach(t => {
+    document.getElementById(`tab-${t}`)?.classList.add('hidden');
+    const n = document.getElementById(`nav-${t}`);
+    if (n) { n.classList.remove('nav-active'); n.classList.add('text-gray-400'); }
+  });
+  document.getElementById(`tab-${name}`)?.classList.remove('hidden');
+  const nav = document.getElementById(`nav-${name}`);
+  if (nav) { nav.classList.add('nav-active'); nav.classList.remove('text-gray-400'); }
+  if (name === 'results') loadResults();
+}
+
+// ══════════════════════════════════════════════════════════
+// LOAD EXAMS
+// ══════════════════════════════════════════════════════════
+async function loadExams() {
+  const { ok, data } = await apiGet('/api/exams');
+  if (!ok) return;
+  allExams = data || [];
+  renderExamGrid(allExams);
+  updateStudentKPIs();
+}
+
+function updateStudentKPIs() {
+  document.getElementById('kpi-total').textContent = allExams.length;
+  document.getElementById('kpi-live').textContent  =
+    allExams.filter(e => e.status === 'live').length;
+}
+
+function renderExamGrid(list) {
+  const el = document.getElementById('exams-grid');
+  if (!list.length) {
+    el.innerHTML = `
+      <div class="glass rounded-2xl p-12 text-center text-gray-500 col-span-full">
+        <i class="fas fa-inbox text-4xl mb-3 block text-gray-600"></i>
+        <p class="font-medium">No exams available yet.</p>
+        <p class="text-xs mt-1">Check back when your faculty schedules an exam.</p>
+      </div>`;
+    return;
+  }
+  el.innerHTML = list.map(ex => buildStudentCard(ex)).join('');
+}
+
+function buildStudentCard(ex) {
+  const isLive      = ex.status === 'live';
+  const isEnded     = ex.status === 'ended';
+  const isScheduled = ex.status === 'scheduled';
+
+  const badgeCls = isLive ? 'live-badge' : isEnded ? 'ended-badge' : 'scheduled-badge';
+  const badgeLabel = isLive
+    ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block mr-1.5"></span>LIVE NOW'
+    : isEnded ? 'ENDED' : 'SCHEDULED';
+
+  return `
+    <div class="exam-card p-5 flex flex-col" id="card-${ex.exam_id}">
+      <div class="flex items-start justify-between mb-3">
+        <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${badgeCls}
+          flex items-center">
+          ${badgeLabel}
+        </span>
+        <span class="font-mono text-xs text-gray-600 bg-gray-800/60 px-2 py-0.5 rounded-lg">
+          ${ex.exam_id}
+        </span>
+      </div>
+
+      <h3 class="text-white font-bold text-lg mb-0.5 leading-tight">${esc(ex.title)}</h3>
+      <p class="text-gray-500 text-sm mb-3">${esc(ex.subject || '—')}</p>
+
+      <div class="grid grid-cols-2 gap-2 mb-3 text-xs text-gray-400">
+        <span class="flex items-center gap-1.5">
+          <i class="fas fa-clock text-indigo-400"></i> ${ex.duration_mins} min
+        </span>
+        <span class="flex items-center gap-1.5">
+          <i class="fas fa-star text-yellow-400"></i> ${ex.total_marks} marks
+        </span>
+        <span class="flex items-center gap-1.5 col-span-2">
+          <i class="fas fa-calendar text-purple-400"></i>
+          ${new Date(ex.start_time).toLocaleString()}
+        </span>
+      </div>
+
+      <div class="mt-auto pt-2">
+        ${isLive ? `
+        <a href="/exam/${ex.exam_id}"
+          class="btn-enter block w-full py-3 rounded-xl text-center text-white text-sm
+            font-bold flex items-center justify-center gap-2">
+          <i class="fas fa-play"></i> Enter Exam
+        </a>` : `
+        <button disabled
+          class="btn-enter block w-full py-3 rounded-xl text-center text-white text-sm
+            font-bold flex items-center justify-center gap-2 cursor-not-allowed opacity-35">
+          <i class="fas fa-${isEnded ? 'flag-checkered' : 'clock'}"></i>
+          ${isEnded ? 'Exam Ended' : 'Not Started Yet'}
+        </button>`}
+      </div>
+    </div>`;
+}
+
+// ── Update a single card in the grid ─────────────────────
+function updateExamCard(ex) {
+  const existing = document.getElementById(`card-${ex.exam_id}`);
+  if (existing) {
+    const newCard = document.createElement('div');
+    newCard.innerHTML = buildStudentCard(ex);
+    existing.outerHTML = newCard.innerHTML;
+  }
+}
+
+function removeExamCard(examId) {
+  const card = document.getElementById(`card-${examId}`);
+  if (card) {
+    card.classList.add('card-removing');
+    setTimeout(() => {
+      card.remove();
+      allExams = allExams.filter(e => e.exam_id !== examId);
+      updateStudentKPIs();
+      if (!allExams.length) renderExamGrid([]);
+    }, 400);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// LOAD RESULTS
+// ══════════════════════════════════════════════════════════
+async function loadResults() {
+  const { ok, data } = await apiGet('/api/results');
+  if (!ok || !Array.isArray(data)) return;
+  myResults = data;
+
+  const best = myResults.reduce((b,r) => (!b||r.rank<b.rank)?r:b, null);
+  document.getElementById('kpi-results').textContent = myResults.length;
+  document.getElementById('kpi-rank').textContent    = best ? `#${best.rank}` : '—';
+
+  const el = document.getElementById('results-list');
+  if (!myResults.length) {
+    el.innerHTML = `
+      <div class="glass rounded-2xl p-10 text-center text-gray-500">
+        <i class="fas fa-hourglass-half text-3xl mb-2 block text-gray-600"></i>
+        <p class="font-medium">No results yet.</p>
+        <p class="text-xs mt-1">Complete exams to see your results here.</p>
+      </div>`;
+    return;
+  }
+  el.innerHTML = myResults.map(r => `
+    <div class="glass2 rounded-2xl p-4 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0
+        ${r.pass ? 'bg-emerald-500/15 border border-emerald-500/25' : 'bg-red-500/15 border border-red-500/25'}">
+        <i class="fas fa-${r.pass ? 'check-circle text-emerald-400' : 'times-circle text-red-400'} text-xl"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-white font-semibold text-sm">${esc(r.exam_id)}</p>
+        <p class="text-gray-500 text-xs mt-0.5">
+          Score: <strong class="text-white">${r.total}</strong> ·
+          Rank: <strong class="text-yellow-400">#${r.rank}</strong> ·
+          ${r.pass ? '<span class="text-emerald-400">PASSED</span>' : '<span class="text-red-400">FAILED</span>'}
+        </p>
+      </div>
+      <a href="/ranking/${r.exam_id}"
+        class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border
+          border-purple-500/30 text-purple-300 hover:bg-purple-500/15 transition-colors">
+        View Ranking
+      </a>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// UTIL
+// ══════════════════════════════════════════════════════════
+function esc(str) {
+  if (str==null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+init();
+</script>
+</body>
+</html>

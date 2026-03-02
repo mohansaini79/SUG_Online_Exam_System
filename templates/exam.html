@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Exam – ExamPro SUG</title>
+<!-- results.html — </head> se pehle add karo -->
+<script src="/static/js/toast.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  * { font-family:'Inter',sans-serif; box-sizing:border-box; }
+
+  body {
+    background:#020208;
+    user-select:none;
+    -webkit-user-select:none;
+    min-height:100vh;
+    color:#e2e8f0;
+  }
+
+  .glass {
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.07);
+  }
+  .q-card {
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:16px; transition:border-color 0.2s;
+  }
+  .q-card:hover { border-color:rgba(99,102,241,0.25); }
+
+  .opt-label {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    transition:all 0.15s; cursor:pointer;
+    border-radius:12px;
+    display:flex; align-items:center;
+    gap:12px; padding:12px 16px; color:#d1d5db;
+  }
+  .opt-label:hover {
+    background:rgba(99,102,241,0.12);
+    border-color:rgba(99,102,241,0.4); color:white;
+  }
+  input[type=radio]:checked + .opt-label,
+  .opt-selected {
+    background:rgba(99,102,241,0.18) !important;
+    border-color:rgba(99,102,241,0.6) !important;
+    color:white !important;
+  }
+
+  .textarea-ans {
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    color:white; transition:all 0.2s;
+    border-radius:12px; width:100%;
+    resize:vertical; padding:12px 16px;
+    font-size:14px; outline:none; min-height:120px;
+    user-select:text; -webkit-user-select:text;
+  }
+  .textarea-ans:focus {
+    border-color:#6366f1;
+    box-shadow:0 0 0 3px rgba(99,102,241,0.12);
+  }
+  .textarea-ans::placeholder { color:rgba(255,255,255,0.25); }
+
+  @keyframes timer-pulse {
+    0%,100%{ opacity:1; } 50%{ opacity:0.4; }
+  }
+  .timer-urgent {
+    animation:timer-pulse 1s ease-in-out infinite;
+    color:#ef4444 !important;
+  }
+  .timer-warning { color:#f59e0b !important; }
+
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb {
+    background:rgba(99,102,241,0.4); border-radius:4px;
+  }
+
+  /* ══════════════════════════════════════════════
+     PROFESSIONAL TOAST
+  ══════════════════════════════════════════════ */
+  #toast-container {
+    position:fixed; top:20px; right:20px;
+    z-index:99999;
+    display:flex; flex-direction:column; gap:10px;
+    pointer-events:none; max-width:360px; width:100%;
+  }
+  .toast {
+    pointer-events:all;
+    background:rgba(8,10,30,0.98);
+    border-radius:14px; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.08);
+    box-shadow:0 8px 32px rgba(0,0,0,0.7);
+    display:flex; align-items:stretch;
+    position:relative;
+    animation:tIn 0.3s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  .toast.out { animation:tOut 0.25s ease forwards; }
+  @keyframes tIn {
+    from{ opacity:0; transform:translateX(110%) scale(0.88); }
+    to  { opacity:1; transform:translateX(0) scale(1); }
+  }
+  @keyframes tOut {
+    from{ opacity:1; transform:translateX(0) scale(1); }
+    to  { opacity:0; transform:translateX(110%) scale(0.9); }
+  }
+  .t-bar { width:4px; flex-shrink:0; }
+  .t-bar.success{ background:linear-gradient(180deg,#10b981,#059669); }
+  .t-bar.error  { background:linear-gradient(180deg,#ef4444,#dc2626); }
+  .t-bar.warning{ background:linear-gradient(180deg,#f59e0b,#d97706); }
+  .t-bar.info   { background:linear-gradient(180deg,#6366f1,#4f46e5); }
+  .t-ico {
+    width:42px; flex-shrink:0;
+    display:flex; align-items:center;
+    justify-content:center; font-size:14px;
+  }
+  .t-ico.success{ color:#10b981; }
+  .t-ico.error  { color:#ef4444; }
+  .t-ico.warning{ color:#f59e0b; }
+  .t-ico.info   { color:#6366f1; }
+  .t-body { flex:1; padding:11px 4px 11px 0; }
+  .t-title {
+    font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.05em;
+    margin-bottom:2px;
+  }
+  .t-title.success{ color:#10b981; }
+  .t-title.error  { color:#ef4444; }
+  .t-title.warning{ color:#f59e0b; }
+  .t-title.info   { color:#6366f1; }
+  .t-msg {
+    font-size:12px; font-weight:500;
+    color:#e2e8f0; line-height:1.4;
+  }
+  .t-close {
+    width:34px; flex-shrink:0;
+    display:flex; align-items:center;
+    justify-content:center;
+    background:none; border:none; cursor:pointer;
+    color:#6b7280; font-size:10px; transition:color 0.15s;
+  }
+  .t-close:hover{ color:#e2e8f0; }
+  .t-prog {
+    position:absolute; bottom:0; left:0; height:2px;
+    animation:tProg linear forwards;
+  }
+  .t-prog.success{ background:#10b981; }
+  .t-prog.error  { background:#ef4444; }
+  .t-prog.warning{ background:#f59e0b; }
+  .t-prog.info   { background:#6366f1; }
+  @keyframes tProg{ from{width:100%} to{width:0%} }
+
+  /* ══════════════════════════════════════════════
+     CAMERA FRAME — smooth, no hang
+  ══════════════════════════════════════════════ */
+  #cam-box {
+    position:fixed; bottom:84px; right:16px;
+    z-index:8000; width:192px;
+    background:rgba(6,9,30,0.97);
+    border:2px solid rgba(99,102,241,0.45);
+    border-radius:16px; overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,0.75),
+               0 0 0 1px rgba(255,255,255,0.04) inset;
+    font-family:Inter,sans-serif;
+    transition:border-color 0.35s, width 0.25s;
+    will-change:border-color;
+  }
+  #cam-box.cam-warn {
+    border-color:rgba(239,68,68,0.7) !important;
+    box-shadow:0 8px 32px rgba(239,68,68,0.2) !important;
+  }
+  #cam-head {
+    display:flex; align-items:center;
+    justify-content:space-between;
+    padding:7px 10px;
+    background:rgba(99,102,241,0.18);
+    border-bottom:1px solid rgba(255,255,255,0.07);
+  }
+  .cam-live-dot {
+    width:7px; height:7px; border-radius:50%;
+    background:#10b981; box-shadow:0 0 6px #10b981;
+    display:inline-block; flex-shrink:0;
+    animation:dotGreen 1.8s ease-in-out infinite;
+  }
+  .cam-live-dot.red {
+    background:#ef4444; box-shadow:0 0 6px #ef4444;
+    animation:dotRed 1.2s ease-in-out infinite;
+  }
+  @keyframes dotGreen {
+    0%,100%{ box-shadow:0 0 4px #10b981; opacity:1; }
+    50%    { box-shadow:0 0 10px #10b981; opacity:.6; }
+  }
+  @keyframes dotRed {
+    0%,100%{ box-shadow:0 0 4px #ef4444; opacity:1; }
+    50%    { box-shadow:0 0 12px #ef4444; opacity:.5; }
+  }
+  #cam-badge {
+    font-size:9px; font-weight:700;
+    padding:2px 7px; border-radius:20px;
+    background:rgba(16,185,129,0.18);
+    border:1px solid rgba(16,185,129,0.35);
+    color:#10b981; letter-spacing:.04em;
+    text-transform:uppercase; transition:all 0.25s;
+  }
+  #cam-badge.warn {
+    background:rgba(239,68,68,0.18);
+    border-color:rgba(239,68,68,0.4);
+    color:#ef4444;
+  }
+  #cam-video-wrap {
+    position:relative; background:#000; height:144px;
+  }
+  #cam-video {
+    width:100%; height:100%;
+    object-fit:cover; display:block;
+    transform:scaleX(-1);
+  }
+  /* ★ Canvas hidden — only used for pixel sampling ★ */
+  #cam-canvas {
+    position:absolute; top:0; left:0;
+    width:1px; height:1px;
+    opacity:0; pointer-events:none;
+  }
+  .cam-corner {
+    position:absolute; width:14px; height:14px;
+    pointer-events:none; transition:border-color 0.3s;
+  }
+  .cam-corner.tl {
+    top:6px; left:6px;
+    border-top:2px solid rgba(16,185,129,0.75);
+    border-left:2px solid rgba(16,185,129,0.75);
+    border-radius:3px 0 0 0;
+  }
+  .cam-corner.tr {
+    top:6px; right:6px;
+    border-top:2px solid rgba(16,185,129,0.75);
+    border-right:2px solid rgba(16,185,129,0.75);
+    border-radius:0 3px 0 0;
+  }
+  .cam-corner.bl {
+    bottom:6px; left:6px;
+    border-bottom:2px solid rgba(16,185,129,0.75);
+    border-left:2px solid rgba(16,185,129,0.75);
+    border-radius:0 0 0 3px;
+  }
+  .cam-corner.br {
+    bottom:6px; right:6px;
+    border-bottom:2px solid rgba(16,185,129,0.75);
+    border-right:2px solid rgba(16,185,129,0.75);
+    border-radius:0 0 3px 0;
+  }
+  #cam-noface {
+    position:absolute; inset:0;
+    background:rgba(239,68,68,0.13);
+    display:none; align-items:center;
+    justify-content:center; flex-direction:column; gap:5px;
+  }
+  #cam-flash {
+    position:absolute; inset:0;
+    background:white; opacity:0;
+    pointer-events:none; transition:opacity 0.1s;
+  }
+  #cam-foot {
+    display:flex; align-items:center;
+    justify-content:space-between;
+    padding:6px 10px;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+  #cam-face-label {
+    display:flex; align-items:center; gap:5px;
+    font-size:10px; font-weight:600;
+    color:#10b981; transition:color 0.25s;
+  }
+  #cam-snap-count {
+    font-size:9px; font-weight:600; color:#4b5563;
+  }
+  #cam-mini-btn {
+    background:none; border:none; cursor:pointer;
+    color:rgba(255,255,255,0.35); font-size:12px;
+    padding:1px 5px; line-height:1; transition:color 0.15s;
+  }
+  #cam-mini-btn:hover{ color:rgba(255,255,255,0.75); }
+
+  /* Camera denied */
+  #cam-denied {
+    display:none; position:fixed;
+    bottom:84px; right:16px; z-index:8000;
+    width:192px;
+    background:rgba(6,9,30,0.97);
+    border:2px solid rgba(239,68,68,0.5);
+    border-radius:16px; overflow:hidden;
+    box-shadow:0 8px 32px rgba(0,0,0,0.7);
+    font-family:Inter,sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- ════════════════════════════════════════════════════
+     CAMERA FRAME
+════════════════════════════════════════════════════ -->
+<div id="cam-box">
+  <!-- Header -->
+  <div id="cam-head">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="cam-live-dot" id="cam-dot"></span>
+      <span style="color:white;font-size:10px;
+        font-weight:700;letter-spacing:.06em;
+        text-transform:uppercase;">Live Cam</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;">
+      <span id="cam-badge">OK</span>
+      <button id="cam-mini-btn" onclick="toggleCamMini()"
+        title="Minimise">&#x2014;</button>
+    </div>
+  </div>
+
+  <!-- Video -->
+  <div id="cam-video-wrap">
+    <video id="cam-video" autoplay muted playsinline></video>
+
+    <!-- ★ Hidden tiny canvas for pixel sampling ★ -->
+    <canvas id="cam-canvas"></canvas>
+
+    <!-- Corner brackets -->
+    <div class="cam-corner tl" id="cc-tl"></div>
+    <div class="cam-corner tr" id="cc-tr"></div>
+    <div class="cam-corner bl" id="cc-bl"></div>
+    <div class="cam-corner br" id="cc-br"></div>
+
+    <!-- No-face overlay -->
+    <div id="cam-noface">
+      <svg width="26" height="26" viewBox="0 0 24 24"
+        fill="none" stroke="#ef4444" stroke-width="2"
+        stroke-linecap="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M6 20v-2a6 6 0 0 1 12 0v2"/>
+        <line x1="2" y1="2" x2="22" y2="22"
+          stroke-width="2.5"/>
+      </svg>
+      <span style="color:#ef4444;font-size:9px;
+        font-weight:700;letter-spacing:.05em;
+        text-transform:uppercase;">No Face</span>
+    </div>
+
+    <!-- Snap flash -->
+    <div id="cam-flash"></div>
+  </div>
+
+  <!-- Footer -->
+  <div id="cam-foot">
+    <span id="cam-face-label">
+      <svg width="10" height="10" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      Face OK
+    </span>
+    <span id="cam-snap-count">Snap: 0</span>
+  </div>
+</div>
+
+<!-- Camera denied -->
+<div id="cam-denied">
+  <div style="padding:14px;text-align:center;">
+    <div style="width:40px;height:40px;border-radius:50%;
+      background:rgba(239,68,68,0.15);
+      border:1px solid rgba(239,68,68,0.4);
+      display:flex;align-items:center;
+      justify-content:center;margin:0 auto 10px;">
+      <svg width="18" height="18" viewBox="0 0 24 24"
+        fill="none" stroke="#ef4444" stroke-width="2"
+        stroke-linecap="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2
+          V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4
+          a2 2 0 0 1 2 2z"/>
+        <line x1="2" y1="2" x2="22" y2="22"/>
+      </svg>
+    </div>
+    <p style="color:#ef4444;font-size:11px;
+      font-weight:700;margin-bottom:4px;">
+      Camera Denied
+    </p>
+    <p style="color:#6b7280;font-size:10px;
+      line-height:1.4;">
+      Allow camera &amp; reload.
+    </p>
+    <button onclick="location.reload()"
+      style="margin-top:10px;width:100%;
+        background:rgba(239,68,68,0.2);
+        border:1px solid rgba(239,68,68,0.4);
+        border-radius:8px;color:#ef4444;
+        padding:6px;font-size:11px;
+        font-weight:700;cursor:pointer;">
+      Reload &amp; Allow
+    </button>
+  </div>
+</div>
+
+<!-- ══ UNIVERSITY TOP BAR ══ -->
+<header class="fixed top-0 left-0 right-0 z-40
+  border-b border-red-900/30"
+  style="background:rgba(4,15,40,0.97);
+    backdrop-filter:blur(20px)">
+
+  <!-- University strip -->
+  <div class="border-b border-white/5 px-4 py-1.5
+    flex items-center justify-between"
+    style="background:rgba(4,30,66,0.8)">
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 rounded-lg overflow-hidden
+        bg-white flex items-center justify-center
+        flex-shrink-0">
+        <img src="/static/images/logo.png"
+          onerror="this.style.display='none';
+            this.nextElementSibling.style.display='flex'"
+          alt="Logo"
+          class="w-full h-full object-contain"/>
+        <div class="hidden w-full h-full bg-blue-900
+          items-center justify-center">
+          <span class="text-white font-black
+            text-[8px]">SUG</span>
+        </div>
+      </div>
+      <span class="text-white text-[10px] font-bold
+        tracking-wider hidden sm:inline">
+        SHOBHIT UNIVERSITY GANGOH · CS DEPT
+      </span>
+      <span class="text-white text-[10px] font-bold
+        tracking-wider sm:hidden">SUG</span>
+    </div>
+    <span class="text-red-300 text-[10px] font-medium">
+      Online Examination System
+    </span>
+  </div>
+
+  <!-- Exam bar -->
+  <div class="max-w-4xl mx-auto px-4 py-3
+    flex items-center gap-3">
+    <div class="flex items-center gap-2.5 flex-1 min-w-0">
+      <div class="w-8 h-8 rounded-xl bg-indigo-600/30
+        flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-file-alt text-indigo-400 text-xs">
+        </i>
+      </div>
+      <div class="min-w-0">
+        <p id="exam-title"
+          class="text-white font-bold text-sm truncate">
+          Loading…
+        </p>
+        <p class="text-gray-500 text-xs">
+          Online Examination
+        </p>
+      </div>
+      <span id="save-indicator"
+        class="hidden sm:flex items-center gap-1
+          text-xs text-emerald-400 opacity-0
+          transition-opacity duration-500 flex-shrink-0">
+        <i class="fas fa-check-circle"></i> Saved
+      </span>
+    </div>
+
+    <!-- Timer -->
+    <div id="timer-box"
+      class="glass px-4 py-2 rounded-xl
+        flex items-center gap-2 flex-shrink-0">
+      <i class="fas fa-clock text-gray-500 text-xs"></i>
+      <span id="timer-display"
+        class="font-mono font-bold text-lg
+          text-emerald-400">--:--</span>
+    </div>
+
+    <!-- Submit -->
+    <button id="submit-btn" onclick="submitExam(false)"
+      class="flex-shrink-0 px-4 py-2 rounded-xl
+        text-sm font-bold text-white
+        bg-gradient-to-r from-indigo-600 to-purple-600
+        hover:opacity-90 transition-all
+        flex items-center gap-2 shadow-lg">
+      <i class="fas fa-paper-plane"></i>
+      <span class="hidden sm:inline">Submit Exam</span>
+    </button>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="h-0.5 bg-gray-800/60">
+    <div id="progress-bar"
+      class="h-full bg-gradient-to-r
+        from-indigo-500 to-purple-500
+        transition-all duration-500"
+      style="width:0%"></div>
+  </div>
+</header>
+
+<!-- VIOLATION BANNER -->
+<div id="violation-banner"
+  class="hidden fixed top-[88px] left-0 right-0 z-30
+    bg-red-600/90 backdrop-blur-md text-white
+    text-sm text-center py-2.5 px-4
+    border-b border-red-500/30">
+  <i class="fas fa-exclamation-triangle mr-2"></i>
+  <span id="violation-msg">Violation detected!</span>
+</div>
+
+<!-- ══ MAIN CONTENT ══ -->
+<main class="max-w-4xl mx-auto px-4 pt-28 pb-32">
+
+  <div class="flex items-center justify-between mb-5 text-sm">
+    <div class="glass rounded-xl px-4 py-2
+      flex items-center gap-4">
+      <span class="text-gray-400">
+        <i class="fas fa-check-circle
+          text-emerald-400 mr-1.5"></i>
+        Answered:
+        <strong class="text-white"
+          id="q-answered">0</strong>
+      </span>
+      <span class="text-gray-600">|</span>
+      <span class="text-gray-400">
+        Total:
+        <strong class="text-white" id="q-total">0</strong>
+      </span>
+    </div>
+    <span class="text-xs text-gray-500
+      glass px-3 py-2 rounded-xl">
+      <i class="fas fa-save mr-1 text-indigo-400"></i>
+      Auto-saves every 10s
+    </span>
+  </div>
+
+  <div id="questions-container" class="space-y-5">
+    <div class="text-center py-28 text-gray-500">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-500/10
+        border border-indigo-500/20
+        flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-spinner fa-spin
+          text-2xl text-indigo-400"></i>
+      </div>
+      <p class="font-medium text-gray-400">
+        Loading your exam…
+      </p>
+      <p class="text-xs text-gray-600 mt-2"
+        id="load-status">Connecting to server…</p>
+    </div>
+  </div>
+</main>
+
+<!-- FULLSCREEN OVERLAY -->
+<div id="fullscreen-overlay"
+  class="fixed inset-0 z-[9990] flex items-center
+    justify-center p-4"
+  style="background:rgba(2,2,8,0.97);
+    backdrop-filter:blur(20px)">
+  <div class="glass rounded-3xl p-10 text-center
+    max-w-sm w-full shadow-2xl">
+    <div class="w-20 h-20 rounded-3xl bg-yellow-500/10
+      border border-yellow-500/20
+      flex items-center justify-center mx-auto mb-5">
+      <i class="fas fa-expand
+        text-4xl text-yellow-400"></i>
+    </div>
+    <h2 class="text-2xl font-bold text-white mb-2">
+      Fullscreen Required
+    </h2>
+    <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+      This exam must be taken in fullscreen mode
+      to maintain integrity.
+    </p>
+    <button onclick="enterFullscreen()"
+      class="w-full py-3 rounded-xl font-bold
+        text-white text-sm
+        bg-gradient-to-r from-indigo-600 to-purple-600
+        hover:opacity-90 transition-all">
+      <i class="fas fa-expand mr-2"></i>
+      Enter Fullscreen &amp; Start Exam
+    </button>
+    <button onclick="skipFullscreen()"
+      class="w-full mt-2 py-2.5 rounded-xl text-sm
+        text-gray-500 hover:text-gray-300
+        transition-colors">
+      Continue without fullscreen
+    </button>
+  </div>
+</div>
+
+<!-- SUBMIT CONFIRM MODAL -->
+<div id="submit-modal"
+  class="hidden fixed inset-0 z-[9980]
+    flex items-center justify-center p-4"
+  style="background:rgba(0,0,0,0.85);
+    backdrop-filter:blur(16px)">
+  <div class="glass rounded-2xl p-8 max-w-sm w-full
+    text-center shadow-2xl border border-white/10">
+    <div class="w-16 h-16 rounded-2xl bg-indigo-500/15
+      border border-indigo-500/25
+      flex items-center justify-center mx-auto mb-5">
+      <i class="fas fa-paper-plane
+        text-2xl text-indigo-400"></i>
+    </div>
+    <h3 class="text-xl font-bold text-white mb-2">
+      Submit Exam?
+    </h3>
+    <p class="text-gray-400 text-sm mb-2 leading-relaxed">
+      You have answered
+      <strong class="text-white"
+        id="modal-answered">0</strong>
+      out of
+      <strong class="text-white"
+        id="modal-total">0</strong>
+      questions.
+    </p>
+    <p id="modal-warn"
+      class="text-yellow-400 text-xs mb-5 hidden">
+      <i class="fas fa-exclamation-triangle mr-1"></i>
+      Some questions are unanswered!
+    </p>
+    <div class="flex gap-3">
+      <button onclick="closeSubmitModal()"
+        class="flex-1 py-3 rounded-xl text-sm
+          font-bold text-gray-400 border border-white/10
+          hover:bg-white/5 transition-all">
+        Cancel
+      </button>
+      <button onclick="confirmSubmit()"
+        class="flex-1 py-3 rounded-xl text-sm
+          font-bold text-white
+          bg-gradient-to-r from-indigo-600 to-purple-600
+          hover:opacity-90 transition-all">
+        <i class="fas fa-check mr-2"></i>Confirm Submit
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCRIPTS ══ -->
+<script>
+  const EXAM_ID = "{{ exam_id }}";
+</script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js">
+</script>
+<script src="/static/js/app.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  ExamPro Exam Controller — Team Believer © 2026
+//  Camera: LOW CPU mode (80×60 canvas, 4s interval, rAF)
+//  Proctor: No debugger trap, 5s devtools check
+// ═══════════════════════════════════════════════════════════
+
+// ── State ───────────────────────────────────────────────────
+let examData      = null;
+let questions     = [];
+let answers       = {};
+let timerInterval = null;
+let remaining     = 0;
+let autoSaveTimer = null;
+let submitted     = false;
+
+// ── Camera state ────────────────────────────────────────────
+let camStream      = null;
+let camActive      = false;
+let camNoFaceCount = 0;
+let camSnapCount   = 0;
+let camDetectLoop  = null;
+let camSnapTimer   = null;
+let camMini        = false;
+let camCtx         = null;   // reused context
+
+// ── Proctor state ───────────────────────────────────────────
+let violationCount = 0;
+let violationLimit = 3;
+let proctorActive  = false;
+let dtInterval     = null;
+let blurCooldown   = false;
+
+// ── Socket ──────────────────────────────────────────────────
+const socket = io({ transports: ['websocket','polling'] });
+socket.on('connect', () => {
+  console.log('[Socket] Connected:', socket.id);
+  socket.emit('join_exam', { exam_id: EXAM_ID });
+});
+socket.on('connect_error', e =>
+  console.warn('[Socket] Error:', e.message));
+socket.on('exam_stopped', d => {
+  if (d.exam_id === EXAM_ID) {
+    examToast('Exam stopped by faculty!','warning');
+    setTimeout(() => submitExam(true), 2000);
+  }
+});
+socket.on('exam_ended', d => {
+  if (d.exam_id === EXAM_ID) {
+    examToast('Time is up! Submitting…','warning');
+    setTimeout(() => submitExam(true), 1500);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+const T_CFG = {
+  success:{ icon:'fas fa-check-circle',        title:'Success' },
+  error:  { icon:'fas fa-times-circle',         title:'Error'   },
+  warning:{ icon:'fas fa-exclamation-triangle', title:'Warning' },
+  info:   { icon:'fas fa-info-circle',          title:'Info'    }
+};
+function examToast(msg, type='info', dur=4000) {
+  const cfg = T_CFG[type] || T_CFG.info;
+  const ct  = document.getElementById('toast-container');
+  const t   = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `
+    <div class="t-bar ${type}"></div>
+    <div class="t-ico ${type}">
+      <i class="${cfg.icon}"></i></div>
+    <div class="t-body">
+      <div class="t-title ${type}">${cfg.title}</div>
+      <div class="t-msg">${msg}</div></div>
+    <button class="t-close"
+      onclick="rmT(this.parentElement)">
+      <i class="fas fa-times"></i></button>
+    <div class="t-prog ${type}"
+      style="animation-duration:${dur}ms"></div>`;
+  ct.appendChild(t);
+  setTimeout(() => rmT(t), dur);
+}
+function rmT(el) {
+  if (!el || el.classList.contains('out')) return;
+  el.classList.add('out');
+  setTimeout(() => el.remove(), 260);
+}
+window.examToast = examToast;
+
+// ═══════════════════════════════════════════════════════════
+// CAMERA — LOW CPU (★ all fixes applied ★)
+// ═══════════════════════════════════════════════════════════
+
+// ★ FIX 1: Low resolution + limited FPS ★
+async function startCamera() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width:     { ideal: 160 },   // ★ low res
+        height:    { ideal: 120 },
+        frameRate: { ideal: 15, max: 20 }, // ★ limit FPS
+        facingMode: 'user'
+      },
+      audio: false
+    });
+
+    const video  = document.getElementById('cam-video');
+    const canvas = document.getElementById('cam-canvas');
+
+    video.srcObject = camStream;
+    video.onloadedmetadata = () => {
+      // ★ FIX: Tiny canvas — 80×60 only ★
+      canvas.width  = 80;
+      canvas.height = 60;
+      // ★ FIX: willReadFrequently = true ★
+      camCtx = canvas.getContext('2d',
+        { willReadFrequently: true });
+    };
+
+    camActive = true;
+    document.getElementById('cam-box')
+      .style.display = 'block';
+    document.getElementById('cam-denied')
+      .style.display = 'none';
+
+    // ★ FIX: 4s interval (was 2.5s) ★
+    camDetectLoop = setInterval(detectFace, 4000);
+    // ★ FIX: 60s snapshot (was 30s) ★
+    camSnapTimer  = setInterval(takeSnap, 60000);
+
+    console.log('[Camera] Started — low CPU mode');
+  } catch (err) {
+    console.warn('[Camera] Denied:', err);
+    document.getElementById('cam-box')
+      .style.display = 'none';
+    document.getElementById('cam-denied')
+      .style.display = 'block';
+  }
+}
+
+function stopCamera() {
+  camActive = false;
+  if (camDetectLoop) clearInterval(camDetectLoop);
+  if (camSnapTimer)  clearInterval(camSnapTimer);
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  console.log('[Camera] Stopped');
+}
+
+// ★ FIX 2: requestAnimationFrame + 80×60 + step 32 ★
+function detectFace() {
+  if (!camActive) return;
+  const video = document.getElementById('cam-video');
+  if (!video || video.readyState < 2 || !camCtx) return;
+
+  // Non-blocking via rAF
+  requestAnimationFrame(() => {
+    try {
+      const W = 80, H = 60;
+      camCtx.drawImage(video, 0, 0, W, H);
+
+      const data = camCtx.getImageData(
+        Math.floor(W*.2), Math.floor(H*.05),
+        Math.floor(W*.6), Math.floor(H*.65)
+      ).data;
+
+      let bright = 0, skinPx = 0, total = 0;
+
+      // ★ Step 32 — only ~180 samples total ★
+      for (let i = 0; i < data.length; i += 32) {
+        const r = data[i], g = data[i+1], b = data[i+2];
+        bright += (r + g + b) / 3;
+        if (r > 60 && r < 250 &&
+            g > 40 && g < 200 &&
+            b > 20 && b < 180 &&
+            r > g  && r > b   &&
+            (r - g) > 15) {
+          skinPx++;
+        }
+        total++;
+      }
+
+      const avg      = total ? bright / total : 0;
+      const skinR    = total ? skinPx / total : 0;
+      const detected = avg > 20 && skinR > 0.06;
+
+      updateCamUI(detected);
+    } catch(e) {
+      updateCamUI(true);
+    }
+  });
+}
+
+// ★ FIX 3: rAF + small 160×120 canvas ★
+function takeSnap() {
+  if (!camActive) return;
+  const video = document.getElementById('cam-video');
+  if (!video || video.readyState < 2) return;
+
+  requestAnimationFrame(() => {
+    try {
+      const snap = document.createElement('canvas');
+      snap.width  = 160;
+      snap.height = 120;
+      snap.getContext('2d').drawImage(video, 0, 0, 160, 120);
+      camSnapCount++;
+
+      const cnt = document.getElementById('cam-snap-count');
+      if (cnt) cnt.textContent = `Snap: ${camSnapCount}`;
+
+      const flash = document.getElementById('cam-flash');
+      if (flash) {
+        flash.style.opacity = '0.5';
+        setTimeout(() => flash.style.opacity = '0', 120);
+      }
+      console.log(`[Camera] Snap #${camSnapCount}`);
+    } catch(e) { /* ignore */ }
+  });
+}
+
+// Update camera UI
+function updateCamUI(detected) {
+  const box    = document.getElementById('cam-box');
+  const dot    = document.getElementById('cam-dot');
+  const badge  = document.getElementById('cam-badge');
+  const noface = document.getElementById('cam-noface');
+  const label  = document.getElementById('cam-face-label');
+  if (!box) return;
+
+  if (detected) {
+    camNoFaceCount = 0;
+    box.classList.remove('cam-warn');
+    dot.classList.remove('red');
+    badge.classList.remove('warn');
+    badge.textContent    = 'OK';
+    noface.style.display = 'none';
+    label.style.color    = '#10b981';
+    label.innerHTML = `
+      <svg width="10" height="10" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor"
+        stroke-width="2.5">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg> Face OK`;
+
+    // Green corners
+    document.querySelectorAll('.cam-corner')
+      .forEach(c => {
+        const s = c.style;
+        if (c.classList.contains('tl')||
+            c.classList.contains('bl')) {
+          s.borderLeftColor  = 'rgba(16,185,129,0.75)';
+        }
+        if (c.classList.contains('tr')||
+            c.classList.contains('br')) {
+          s.borderRightColor = 'rgba(16,185,129,0.75)';
+        }
+        if (c.classList.contains('tl')||
+            c.classList.contains('tr')) {
+          s.borderTopColor   = 'rgba(16,185,129,0.75)';
+        }
+        if (c.classList.contains('bl')||
+            c.classList.contains('br')) {
+          s.borderBottomColor= 'rgba(16,185,129,0.75)';
+        }
+      });
+
+  } else {
+    camNoFaceCount++;
+    box.classList.add('cam-warn');
+    dot.classList.add('red');
+    badge.classList.add('warn');
+    badge.textContent    = 'WARN';
+    noface.style.display = 'flex';
+    label.style.color    = '#ef4444';
+    label.innerHTML = `
+      <svg width="10" height="10" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor"
+        stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg> No Face`;
+
+    // Red corners
+    document.querySelectorAll('.cam-corner')
+      .forEach(c => {
+        const s = c.style;
+        if (c.classList.contains('tl')||
+            c.classList.contains('bl')) {
+          s.borderLeftColor  = 'rgba(239,68,68,0.75)';
+        }
+        if (c.classList.contains('tr')||
+            c.classList.contains('br')) {
+          s.borderRightColor = 'rgba(239,68,68,0.75)';
+        }
+        if (c.classList.contains('tl')||
+            c.classList.contains('tr')) {
+          s.borderTopColor   = 'rgba(239,68,68,0.75)';
+        }
+        if (c.classList.contains('bl')||
+            c.classList.contains('br')) {
+          s.borderBottomColor= 'rgba(239,68,68,0.75)';
+        }
+      });
+
+    // Violation after 5 consecutive misses
+    if (camNoFaceCount >= 5) {
+      camNoFaceCount = 0;
+      reportViolation('no_face',
+        'Face not visible! Please face the screen.');
+    }
+  }
+}
+
+// Minimize toggle
+function toggleCamMini() {
+  camMini = !camMini;
+  const wrap = document.getElementById('cam-video-wrap');
+  const foot = document.getElementById('cam-foot');
+  const btn  = document.getElementById('cam-mini-btn');
+  wrap.style.display = camMini ? 'none' : 'block';
+  foot.style.display = camMini ? 'none' : 'flex';
+  btn.textContent    = camMini ? '⬜' : '—';
+}
+
+// ═══════════════════════════════════════════════════════════
+// PROCTORING — anti-cheat
+// ═══════════════════════════════════════════════════════════
+function startProctor(examId, limit) {
+  violationLimit = limit || 3;
+  proctorActive  = true;
+
+  document.addEventListener('visibilitychange', onVisChange);
+  window.addEventListener('blur', onWinBlur);
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('contextmenu', e => {
+    if (proctorActive) e.preventDefault();
+  });
+  ['copy','cut'].forEach(ev =>
+    document.addEventListener(ev, e => {
+      if (proctorActive && e.target.tagName !== 'TEXTAREA')
+        e.preventDefault();
+    })
+  );
+  window.addEventListener('beforeunload', e => {
+    if (proctorActive && !submitted) {
+      e.preventDefault();
+      e.returnValue = 'Exam in progress!';
+    }
+  });
+  document.addEventListener('fullscreenchange', onFsChange);
+
+  // ★ FIX 4: NO debugger trap — only window size ★
+  startDevToolsDetect();
+
+  console.log('[Proctor] Started — limit:', violationLimit);
+}
+
+function stopProctor() {
+  proctorActive = false;
+  if (dtInterval) clearInterval(dtInterval);
+  document.removeEventListener('visibilitychange', onVisChange);
+  window.removeEventListener('blur', onWinBlur);
+  document.removeEventListener('keydown', onKeyDown);
+}
+
+function onVisChange() {
+  if (!proctorActive || !document.hidden) return;
+  reportViolation('tab_switch',
+    'Tab switch detected! Stay on exam tab.');
+}
+
+function onWinBlur() {
+  if (!proctorActive || blurCooldown) return;
+  blurCooldown = true;
+  setTimeout(() => blurCooldown = false, 3000);
+  reportViolation('window_blur',
+    'Window focus lost! Stay on exam page.');
+}
+
+function onKeyDown(e) {
+  if (!proctorActive) return;
+  if (e.key === 'F12') {
+    e.preventDefault();
+    examToast('Dev tools not allowed!','warning'); return;
+  }
+  if ((e.ctrlKey||e.metaKey) &&
+    ['u','j','k','i','c','x','s','p']
+      .includes(e.key.toLowerCase())) {
+    e.preventDefault();
+    if (['u','j','k','i'].includes(e.key.toLowerCase()))
+      reportViolation('devtools_key',
+        'Dev tool shortcut blocked!');
+  }
+  if (e.key === 'PrintScreen') {
+    e.preventDefault();
+    examToast('Screenshots not allowed!','warning');
+  }
+}
+
+function onFsChange() {
+  if (!proctorActive) return;
+  if (!document.fullscreenElement) {
+    reportViolation('fullscreen_exit',
+      'Fullscreen exited! Re-entering…');
+    setTimeout(() => {
+      document.documentElement.requestFullscreen?.();
+    }, 2500);
+  }
+}
+
+// ★ FIX 4: No debugger — only size check, every 5s ★
+function startDevToolsDetect() {
+  dtInterval = setInterval(() => {
+    if (!proctorActive) return;
+    const dw = Math.abs(window.outerWidth  - window.innerWidth);
+    const dh = Math.abs(window.outerHeight - window.innerHeight);
+    if (dw > 200 || dh > 200)
+      reportViolation('devtools_open',
+        'Developer tools detected!');
+  }, 5000); // ★ every 5s ★
+}
+
+// Report violation
+async function reportViolation(type, msg) {
+  if (!proctorActive) return;
+  violationCount++;
+  const left = violationLimit - violationCount;
+
+  const banner = document.getElementById('violation-banner');
+  const vMsg   = document.getElementById('violation-msg');
+  if (banner && vMsg) {
+    vMsg.textContent =
+      `${msg} — ${violationCount}/${violationLimit}` +
+      (left > 0 ? ` (${left} left)` : '');
+    banner.classList.remove('hidden');
+    setTimeout(() => banner.classList.add('hidden'), 5000);
+  }
+
+  examToast(msg, 'warning', 5000);
+  console.warn(`[Proctor] #${violationCount}: ${type}`);
+  showViolationOverlay(type, msg,
+    violationCount, violationLimit);
+
+  try {
+    const r = await fetch(
+      `/api/exams/${EXAM_ID}/violation`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'same-origin',
+      body: JSON.stringify({ type })
+    });
+    const d = await r.json();
+    if (d.auto_submit) { forceSubmit(); return; }
+  } catch(e) {
+    console.error('[Proctor] API error:', e);
+  }
+
+  if (violationCount >= violationLimit) forceSubmit();
+}
+
+function forceSubmit() {
+  proctorActive = false;
+  showForceSubmitOverlay();
+  setTimeout(() => submitExam(true), 2500);
+}
+
+// Violation overlay
+function showViolationOverlay(type, msg, count, limit) {
+  document.getElementById('vio-overlay')?.remove();
+  const isLast = count >= limit;
+  const left   = limit - count;
+
+  const ov = document.createElement('div');
+  ov.id = 'vio-overlay';
+  ov.style.cssText = `
+    position:fixed;inset:0;z-index:99990;
+    background:rgba(0,0,0,0.88);
+    display:flex;align-items:center;
+    justify-content:center;
+    font-family:Inter,sans-serif;
+    animation:ovFade 0.2s ease;`;
+  ov.innerHTML = `
+    <style>
+      @keyframes ovFade{from{opacity:0}to{opacity:1}}
+      @keyframes ovShake{
+        0%,100%{transform:translateX(0)}
+        25%,75%{transform:translateX(-7px)}
+        50%    {transform:translateX(7px)}
+      }
+    </style>
+    <div style="
+      background:rgba(8,10,30,0.99);
+      border:2px solid rgba(239,68,68,0.6);
+      border-radius:20px;padding:34px 38px;
+      max-width:410px;width:90%;text-align:center;
+      box-shadow:0 24px 64px rgba(239,68,68,0.2);
+      animation:ovShake 0.45s ease;">
+
+      <div style="width:58px;height:58px;border-radius:50%;
+        background:rgba(239,68,68,0.15);
+        border:2px solid rgba(239,68,68,0.4);
+        display:flex;align-items:center;
+        justify-content:center;margin:0 auto 16px;">
+        <svg width="24" height="24" viewBox="0 0 24 24"
+          fill="none" stroke="#ef4444" stroke-width="2.5"
+          stroke-linecap="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3
+            h16.94a2 2 0 001.71-3L13.71 3.86
+            a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+
+      <h3 style="color:#ef4444;font-size:16px;
+        font-weight:900;margin-bottom:8px;
+        text-transform:uppercase;letter-spacing:.05em;">
+        Violation Detected
+      </h3>
+      <p style="color:#d1d5db;font-size:13px;
+        line-height:1.6;margin-bottom:16px;">${msg}</p>
+
+      <div style="background:rgba(239,68,68,0.1);
+        border:1px solid rgba(239,68,68,0.3);
+        border-radius:12px;padding:12px;margin-bottom:16px;">
+        <p style="color:#9ca3af;font-size:10px;
+          font-weight:700;text-transform:uppercase;
+          letter-spacing:.08em;margin-bottom:3px;">
+          Violations
+        </p>
+        <p style="font-size:24px;font-weight:900;
+          color:${isLast?'#ef4444':'#f59e0b'};">
+          ${count} / ${limit}
+        </p>
+        <p style="font-size:11px;font-weight:600;
+          margin-top:3px;
+          color:${isLast?'#ef4444':'#fbbf24'};">
+          ${isLast
+            ? 'Submitting now…'
+            : `${left} warning${left>1?'s':''} left`}
+        </p>
+      </div>
+
+      ${!isLast ? `
+        <button
+          onclick="document.getElementById(
+            'vio-overlay').remove()"
+          style="background:linear-gradient(
+              135deg,#1e3a8a,#1d4ed8);
+            border:none;border-radius:10px;
+            color:white;padding:10px 26px;
+            font-weight:700;font-size:13px;
+            cursor:pointer;font-family:Inter,sans-serif;">
+          Return to Exam
+        </button>` : `
+        <p style="color:#ef4444;font-size:13px;
+          font-weight:700;">Submitting…</p>`}
+    </div>`;
+
+  document.body.appendChild(ov);
+  if (!isLast) setTimeout(() => ov.remove(), 6000);
+}
+
+// Force submit overlay
+function showForceSubmitOverlay() {
+  document.querySelectorAll('#vio-overlay,#fs-overlay')
+    .forEach(e => e.remove());
+  const ov = document.createElement('div');
+  ov.id = 'fs-overlay';
+  ov.style.cssText = `
+    position:fixed;inset:0;z-index:99999;
+    background:rgba(0,0,0,0.96);
+    display:flex;align-items:center;
+    justify-content:center;
+    font-family:Inter,sans-serif;`;
+  ov.innerHTML = `
+    <div style="background:rgba(8,10,30,0.99);
+      border:2px solid rgba(239,68,68,0.8);
+      border-radius:20px;padding:38px;
+      max-width:390px;width:90%;text-align:center;
+      box-shadow:0 32px 80px rgba(239,68,68,0.3);">
+      <div style="width:64px;height:64px;border-radius:50%;
+        background:rgba(239,68,68,0.2);
+        border:2px solid rgba(239,68,68,0.6);
+        display:flex;align-items:center;
+        justify-content:center;margin:0 auto 20px;">
+        <svg width="28" height="28" viewBox="0 0 24 24"
+          fill="none" stroke="#ef4444" stroke-width="2.5"
+          stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="4.93" y1="4.93"
+            x2="19.07" y2="19.07"/>
+        </svg>
+      </div>
+      <h3 style="color:#ef4444;font-size:18px;
+        font-weight:900;margin-bottom:8px;
+        text-transform:uppercase;">
+        Exam Auto-Submitted
+      </h3>
+      <p style="color:#9ca3af;font-size:13px;
+        line-height:1.6;margin-bottom:20px;">
+        Violation limit exceeded.<br/>
+        Your answers have been saved.
+      </p>
+      <div style="height:4px;
+        background:rgba(255,255,255,0.08);
+        border-radius:4px;overflow:hidden;
+        margin-bottom:8px;">
+        <div style="height:100%;background:#ef4444;
+          animation:fsProgress 2.5s linear forwards;">
+        </div>
+      </div>
+      <p style="color:#6b7280;font-size:11px;">
+        Redirecting to dashboard…
+      </p>
+    </div>
+    <style>
+      @keyframes fsProgress{
+        from{width:0}to{width:100%}
+      }
+    </style>`;
+  document.body.appendChild(ov);
+}
+
+// ═══════════════════════════════════════════════════════════
+// FULLSCREEN
+// ═══════════════════════════════════════════════════════════
+function enterFullscreen() {
+  document.documentElement.requestFullscreen?.()
+    .then(() => {
+      document.getElementById('fullscreen-overlay')
+        .style.display = 'none';
+    })
+    .catch(() => skipFullscreen());
+}
+function skipFullscreen() {
+  document.getElementById('fullscreen-overlay')
+    .style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════════════════
+function startTimer(seconds) {
+  remaining = seconds;
+  clearInterval(timerInterval);
+
+  timerInterval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      examToast('Time is up! Auto-submitting…','warning');
+      submitExam(true); return;
+    }
+    const m  = Math.floor(remaining / 60);
+    const s  = remaining % 60;
+    const el = document.getElementById('timer-display');
+    el.textContent =
+      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if      (remaining <= 60)
+      el.className = 'font-mono font-bold text-lg timer-urgent';
+    else if (remaining <= 300)
+      el.className = 'font-mono font-bold text-lg timer-warning';
+    else
+      el.className = 'font-mono font-bold text-lg text-emerald-400';
+  }, 1000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// LOAD EXAM
+// ═══════════════════════════════════════════════════════════
+async function loadExam() {
+  try {
+    document.getElementById('load-status').textContent =
+      'Starting session…';
+
+    const sr = await fetch(
+      `/api/exams/${EXAM_ID}/session`,
+      { method:'POST', credentials:'same-origin' }
+    );
+    const sd = await sr.json();
+
+    if (!sr.ok) {
+      if (sd.submitted) {
+        document.getElementById('questions-container')
+          .innerHTML = `
+          <div class="text-center py-20">
+            <div class="w-16 h-16 rounded-2xl
+              bg-emerald-500/10
+              border border-emerald-500/20
+              flex items-center justify-center
+              mx-auto mb-4">
+              <i class="fas fa-check-double
+                text-2xl text-emerald-400"></i>
+            </div>
+            <p class="text-emerald-400
+              font-bold text-lg">
+              Already Submitted
+            </p>
+            <p class="text-gray-500 text-sm mt-2">
+              You have already submitted this exam.
+            </p>
+            <a href="/student/dashboard"
+              class="inline-block mt-4 px-6 py-2
+                rounded-xl bg-indigo-600 text-white
+                text-sm font-bold hover:opacity-90">
+              Back to Dashboard
+            </a>
+          </div>`;
+        return;
+      }
+      throw new Error(sd.error || 'Session error');
+    }
+
+    answers   = sd.answers   || {};
+    remaining = sd.remaining || 3600;
+
+    // Exam info
+    const er  = await fetch(
+      `/api/exams/${EXAM_ID}`,
+      { credentials:'same-origin' }
+    );
+    examData  = await er.json();
+    document.getElementById('exam-title').textContent =
+      examData.title || 'Exam';
+
+    // Questions
+    document.getElementById('load-status').textContent =
+      'Loading questions…';
+    const qr  = await fetch(
+      `/api/exams/${EXAM_ID}/questions`,
+      { credentials:'same-origin' }
+    );
+    questions = await qr.json();
+
+    if (!questions.length) {
+      document.getElementById('questions-container')
+        .innerHTML = `
+        <div class="text-center py-20 text-gray-500">
+          <i class="fas fa-inbox
+            text-4xl mb-4 block"></i>
+          No questions found.
+        </div>`;
+      return;
+    }
+
+    renderQuestions();
+    startTimer(remaining);
+    startAutoSave();
+
+    // ★ Start camera + proctoring ★
+    await startCamera();
+    startProctor(EXAM_ID, examData.violation_limit || 3);
+
+    examToast(
+      `Exam started! ${questions.length} questions.`,
+      'success'
+    );
+
+  } catch(err) {
+    console.error('[Exam] Load error:', err);
+    document.getElementById('questions-container')
+      .innerHTML = `
+      <div class="text-center py-20">
+        <i class="fas fa-exclamation-circle
+          text-4xl text-red-400 mb-4 block"></i>
+        <p class="text-red-400 font-bold">
+          Failed to load exam
+        </p>
+        <p class="text-gray-500 text-sm mt-1">
+          ${err.message}
+        </p>
+        <button onclick="location.reload()"
+          class="mt-4 px-6 py-2 rounded-xl
+            bg-indigo-600 text-white text-sm
+            font-bold hover:opacity-90">
+          Retry
+        </button>
+      </div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER QUESTIONS
+// ═══════════════════════════════════════════════════════════
+function renderQuestions() {
+  const c = document.getElementById('questions-container');
+  c.innerHTML = '';
+  document.getElementById('q-total').textContent =
+    questions.length;
+
+  questions.forEach((q, idx) => {
+    const div = document.createElement('div');
+    div.className = 'q-card p-6';
+    div.id = `q-${q._id}`;
+
+    const mColor =
+      q.marks >= 5 ? 'text-yellow-400' :
+      q.marks >= 3 ? 'text-blue-400'   : 'text-gray-400';
+
+    let body = '';
+
+    if (q.type === 'mcq' && q.options?.length) {
+      body = `<div class="space-y-2 mt-4">
+        ${q.options.map((opt, oi) => `
+          <label class="block cursor-pointer">
+            <input type="radio" name="q_${q._id}"
+              value="${opt.replace(/"/g,'&quot;')}"
+              class="sr-only"
+              onchange="saveAnswer('${q._id}',
+                '${opt.replace(/'/g,"\\'")}', this)"
+              ${answers[q._id]===opt ? 'checked' : ''}>
+            <div class="opt-label
+              ${answers[q._id]===opt
+                ? 'opt-selected' : ''}">
+              <span style="
+                width:26px;height:26px;
+                border-radius:8px;
+                background:rgba(99,102,241,0.15);
+                border:1px solid rgba(99,102,241,0.3);
+                display:flex;align-items:center;
+                justify-content:center;
+                flex-shrink:0;font-size:11px;
+                font-weight:700;color:#a5b4fc;">
+                ${String.fromCharCode(65+oi)}
+              </span>
+              <span class="text-sm">${opt}</span>
+            </div>
+          </label>`).join('')}
+      </div>`;
+    } else {
+      body = `
+        <textarea class="textarea-ans mt-4" rows="5"
+          placeholder="Type your answer here…"
+          oninput="saveAnswer('${q._id}',this.value)"
+        >${answers[q._id] || ''}</textarea>
+        <p class="text-gray-600 text-xs mt-1 text-right"
+          id="cc-${q._id}">
+          ${(answers[q._id]||'').length} characters
+        </p>`;
+    }
+
+    div.innerHTML = `
+      <div class="flex items-start
+        justify-between gap-4 mb-1">
+        <div class="flex items-start gap-3">
+          <span style="
+            width:28px;height:28px;border-radius:8px;
+            background:rgba(99,102,241,0.18);
+            border:1px solid rgba(99,102,241,0.3);
+            display:flex;align-items:center;
+            justify-content:center;flex-shrink:0;
+            font-size:12px;font-weight:800;
+            color:#a5b4fc;">${idx+1}</span>
+          <p class="text-white font-semibold
+            text-sm leading-relaxed">${q.text}</p>
+        </div>
+        <div class="flex items-center
+          gap-2 flex-shrink-0">
+          ${q.type==='mcq'
+            ? `<span class="text-[10px] px-2 py-0.5
+                rounded-full bg-indigo-500/15
+                border border-indigo-500/25
+                text-indigo-400 font-bold
+                uppercase">MCQ</span>`
+            : `<span class="text-[10px] px-2 py-0.5
+                rounded-full bg-purple-500/15
+                border border-purple-500/25
+                text-purple-400 font-bold
+                uppercase">Subjective</span>`}
+          <span class="text-[11px] font-bold
+            ${mColor}">${q.marks}m</span>
+        </div>
+      </div>
+      ${body}`;
+
+    c.appendChild(div);
+  });
+  updateProgress();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SAVE ANSWER
+// ═══════════════════════════════════════════════════════════
+function saveAnswer(qId, val, radioEl) {
+  answers[qId] = val;
+  if (radioEl) {
+    document.querySelectorAll(
+      `input[name="${radioEl.name}"]`
+    ).forEach(r => {
+      r.nextElementSibling?.classList
+        .toggle('opt-selected', r.checked);
+    });
+  }
+  const cc = document.getElementById(`cc-${qId}`);
+  if (cc) cc.textContent = `${val.length} characters`;
+  updateProgress();
+  flashSaved();
+}
+
+function updateProgress() {
+  const answered = Object.keys(answers).filter(
+    k => answers[k] && String(answers[k]).trim()
+  ).length;
+  document.getElementById('q-answered').textContent =
+    answered;
+  const pct = questions.length
+    ? (answered / questions.length * 100) : 0;
+  document.getElementById('progress-bar').style.width =
+    `${pct}%`;
+}
+
+function flashSaved() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.style.opacity = '1';
+  setTimeout(() => el.style.opacity = '0', 1800);
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTO SAVE
+// ═══════════════════════════════════════════════════════════
+function startAutoSave() {
+  autoSaveTimer = setInterval(async () => {
+    if (submitted) return;
+    try {
+      await fetch(`/api/exams/${EXAM_ID}/autosave`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'same-origin',
+        body: JSON.stringify({ answers })
+      });
+      flashSaved();
+    } catch(e) {
+      console.warn('[AutoSave] Failed:', e);
+    }
+  }, 10000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SUBMIT
+// ═══════════════════════════════════════════════════════════
+function submitExam(force = false) {
+  if (submitted) return;
+  if (!force) {
+    const answered = Object.keys(answers).filter(
+      k => answers[k] && String(answers[k]).trim()
+    ).length;
+    document.getElementById('modal-answered').textContent =
+      answered;
+    document.getElementById('modal-total').textContent =
+      questions.length;
+    document.getElementById('modal-warn')
+      .classList.toggle('hidden',
+        answered >= questions.length);
+    document.getElementById('submit-modal')
+      .classList.remove('hidden');
+    return;
+  }
+  _doSubmit();
+}
+
+function confirmSubmit() {
+  closeSubmitModal();
+  _doSubmit();
+}
+function closeSubmitModal() {
+  document.getElementById('submit-modal')
+    .classList.add('hidden');
+}
+
+async function _doSubmit() {
+  if (submitted) return;
+  submitted = true;
+
+  clearInterval(timerInterval);
+  clearInterval(autoSaveTimer);
+  stopProctor();
+  stopCamera();
+
+  const btn = document.getElementById('submit-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML =
+      '<i class="fas fa-circle-notch fa-spin mr-2"></i>' +
+      '<span class="hidden sm:inline">Submitting…</span>';
+  }
+
+  try {
+    const r = await fetch(
+      `/api/exams/${EXAM_ID}/submit`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'same-origin',
+      body: JSON.stringify({ answers })
+    });
+    const d = await r.json();
+
+    if (r.ok) {
+      examToast('Submitted successfully!','success',3000);
+      setTimeout(() => {
+        window.location.href = '/student/dashboard';
+      }, 2000);
+    } else {
+      examToast(d.error || 'Submit failed','error');
+      submitted = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML =
+          '<i class="fas fa-paper-plane mr-2"></i>' +
+          '<span class="hidden sm:inline">Submit Exam</span>';
+      }
+    }
+  } catch(err) {
+    examToast('Network error. Retrying…','warning');
+    submitted = false;
+    setTimeout(() => _doSubmit(), 3000);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// HEARTBEAT — every 15s
+// ═══════════════════════════════════════════════════════════
+setInterval(async () => {
+  if (submitted || !EXAM_ID) return;
+  try {
+    const r = await fetch(
+      `/api/exams/${EXAM_ID}/heartbeat`,
+      { method:'POST', credentials:'same-origin' }
+    );
+    const d = await r.json();
+    if (d.remaining !== undefined) remaining = d.remaining;
+    if (d.status === 'ended' && !submitted) {
+      examToast('Exam ended by faculty!','warning');
+      setTimeout(() => submitExam(true), 1500);
+    }
+  } catch(e) { /* ignore */ }
+}, 15000);
+
+// ── Start ──────────────────────────────────────────────────
+window.addEventListener('load', loadExam);
+</script>
+</body>
+</html>

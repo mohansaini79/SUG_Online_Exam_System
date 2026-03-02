@@ -1,0 +1,51 @@
+<!-- ══ SUG UNIVERSITY BANNER — paste at top of every page body ══ -->
+<div class="w-full flex-shrink-0"
+  style="background:linear-gradient(135deg,rgba(4,30,66,0.98),rgba(60,10,10,0.95));
+         border-bottom:1px solid rgba(185,28,28,0.45);">
+  <div class="px-4 py-2 flex items-center justify-between max-w-full">
+
+    <!-- Left: Logo + Name -->
+    <div class="flex items-center gap-2.5">
+      <!-- Logo with SUG fallback -->
+      <div class="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0
+        bg-white border border-red-600/30 shadow-md
+        flex items-center justify-center">
+        <img src="/static/images/logo.png"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          alt="SUG" class="w-full h-full object-contain p-0.5"/>
+        <!-- SUG text fallback -->
+        <div class="hidden w-full h-full items-center justify-center
+          bg-gradient-to-br from-blue-900 to-red-900">
+          <span class="text-white font-black text-[11px] tracking-tight">SUG</span>
+        </div>
+      </div>
+
+      <div class="min-w-0">
+        <p class="text-white font-black text-xs sm:text-sm leading-tight tracking-wide">
+          SHOBHIT UNIVERSITY GANGOH
+          <span class="hidden sm:inline text-red-400 font-normal text-[10px] ml-1">(SUG)</span>
+        </p>
+        <p class="text-blue-300 text-[10px] font-medium tracking-wider hidden sm:block">
+          Dept. of Computer Science &amp; Technology
+        </p>
+      </div>
+    </div>
+
+    <!-- Right: Badges -->
+    <div class="hidden md:flex items-center gap-3">
+      <span class="inline-flex items-center gap-1 text-[10px] font-semibold
+        text-yellow-400 bg-yellow-500/10 border border-yellow-500/20
+        px-2.5 py-1 rounded-full">
+        <i class="fas fa-award text-[9px]"></i> NAAC A
+      </span>
+      <span class="inline-flex items-center gap-1 text-[10px] font-semibold
+        text-blue-300 bg-blue-500/10 border border-blue-500/20
+        px-2.5 py-1 rounded-full">
+        <i class="fas fa-graduation-cap text-[9px]"></i> ExamPro
+      </span>
+    </div>
+  </div>
+
+  <!-- Bottom gradient line -->
+  <div class="h-px bg-gradient-to-r from-transparent via-red-600/60 to-transparent"></div>
+</div>
