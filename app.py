@@ -826,7 +826,9 @@ def get_groq_client():
     return None
 
 
-def ai_parse_questions(text, subject='General'):
+def ai_parse_questions(
+        text: str,
+        subject: str = 'General') -> list | None:
     client_ai = get_groq_client()
     if not client_ai:
         print("[AI Parse] Groq not available")
@@ -864,11 +866,17 @@ JSON Format:
   }}
 ]
 
+IMPORTANT — Options format in text may be:
+- A) Option text  OR  a) Option text
+- A. Option text  OR  a. Option text
+- (A) Option text OR  (a) Option text
+Strip ALL prefixes — return ONLY the option text.
+
 Rules:
-- type MUST be "mcq" if options exist
+- type MUST be "mcq" if 2+ options exist
 - type MUST be "subjective" for descriptive questions
-- options = texts WITHOUT a. b. c. d. prefix
-- correct_option = exact text of correct answer
+- options = texts WITHOUT any A) a. (A) prefix
+- correct_option = exact option text (not A/B/C/D letter)
 - model_answer = ALWAYS write detailed answer
 - marks: 1 MCQ, 2-5 short, 5-10 long
 - Do NOT skip any question
@@ -889,46 +897,67 @@ JSON array only:"""
         raw = resp.choices[0].message.content.strip()
         print(f"[AI Parse] Response: "
               f"{len(raw)} chars")
+
+        # Clean markdown
         raw = re.sub(r'```json\s*', '', raw)
         raw = re.sub(r'```\s*',     '', raw)
         raw = raw.strip()
+
+        # Extract JSON array
         start = raw.find('[')
         end   = raw.rfind(']') + 1
         if start == -1 or end <= start:
             print("[AI Parse] No JSON array")
             return None
+
         questions = json.loads(raw[start:end])
         cleaned   = []
+
         for q in questions:
             txt = str(q.get('text', '')).strip()
             if not txt or len(txt) < 5:
                 continue
+
             qtype = str(
-                q.get('type',
-                      'subjective')).lower()
+                q.get('type', 'subjective')).lower()
             if qtype not in ('mcq', 'subjective'):
                 qtype = 'subjective'
-            opts = [str(o).strip()
-                    for o in q.get('options', [])
-                    if str(o).strip()]
+
+            # ★ Clean options — remove A) a. (A) prefix ★
+            opts = []
+            for o in q.get('options', []):
+                o = str(o).strip()
+                o = re.sub(
+                    r'^\(?[a-dA-D][.)]\s*',
+                    '', o).strip()
+                if o:
+                    opts.append(o)
+
             if len(opts) >= 2:
                 qtype = 'mcq'
+
+            # ★ Clean correct_option prefix too ★
+            correct = str(
+                q.get('correct_option', '')).strip()
+            correct = re.sub(
+                r'^\(?[a-dA-D][.)]\s*',
+                '', correct).strip()
+
             cleaned.append({
                 'text':           txt,
                 'type':           qtype,
                 'marks':          max(1, int(
                     q.get('marks', 1))),
                 'options':        opts,
-                'correct_option': str(
-                    q.get('correct_option',
-                          '')).strip(),
-                'model_answer':   str(
-                    q.get('model_answer',
-                          '')).strip()
+                'correct_option': correct,
+                'model_answer':   str(q.get(
+                    'model_answer', '')).strip(),
             })
+
         print(f"[AI Parse] ✅ "
               f"{len(cleaned)} questions")
         return cleaned if cleaned else None
+
     except json.JSONDecodeError as e:
         print(f"[AI Parse] JSON error: {e}")
         return None
@@ -1000,28 +1029,50 @@ def ai_generate_model_answers(
     return questions
 
 
-def fallback_parse_questions(text):
+def fallback_parse_questions(text: str) -> list:
     lines   = text.split('\n')
     result  = []
     cur     = None
-    opt_buf = []
-    q_re    = re.compile(
+    opt_buf: list[str] = []
+
+    # Question: 1. / 1) / Q1. / Q1)
+    q_re = re.compile(
         r'^(?:Q\.?\s*)?(\d+)[.)]\s+(.+)',
         re.IGNORECASE)
-    opt_re  = re.compile(
-        r'^[a-d][.)]\s+', re.IGNORECASE)
+
+    # ★ Options: a. / a) / A. / A) / (a) / (A) ★
+    opt_re = re.compile(
+        r'^\(?[a-dA-D][.)]\s+',
+        re.IGNORECASE)
+
+    # Answer line: Answer: B) Queue
+    ans_re = re.compile(
+        r'^(?:answer|ans|correct)[:\s]+(.+)',
+        re.IGNORECASE)
+
+    # Section headers skip
+    skip_re = re.compile(
+        r'^(?:section|part|chapter|mixed|exam)',
+        re.IGNORECASE)
+
     for line in lines:
         line = line.strip()
-        if not line or len(line) < 4:
+        if not line or len(line) < 2:
             continue
+
+        # Skip section headers
+        if skip_re.match(line):
+            continue
+
+        # Question match
         m = q_re.match(line)
         if m:
             if cur:
                 if len(opt_buf) >= 2:
                     cur['options'] = [
                         re.sub(
-                            r'^[a-d][.)]\s+', '',
-                            o,
+                            r'^\(?[a-dA-D][.)]\s*',
+                            '', o,
                             flags=re.I).strip()
                         for o in opt_buf
                     ]
@@ -1034,37 +1085,53 @@ def fallback_parse_questions(text):
                 'marks':          1,
                 'options':        [],
                 'correct_option': '',
-                'model_answer':   ''
+                'model_answer':   '',
             }
-        elif opt_re.match(line) and cur:
+            continue
+
+        # ★ Option match — A) B) a. b. (A) (a) ★
+        if opt_re.match(line) and cur:
             opt_buf.append(line)
-        elif cur and len(line) > 10:
+            continue
+
+        # Answer line
+        ans_m = ans_re.match(line)
+        if ans_m and cur:
+            cur['correct_option'] = (
+                ans_m.group(1).strip())
+            continue
+
+        # Append to current question text
+        if cur and len(line) > 5:
             cur['text'] += ' ' + line
+
+    # Last question flush
     if cur:
         if len(opt_buf) >= 2:
             cur['options'] = [
-                re.sub(r'^[a-d][.)]\s+', '',
-                       o, flags=re.I).strip()
+                re.sub(
+                    r'^\(?[a-dA-D][.)]\s*',
+                    '', o,
+                    flags=re.I).strip()
                 for o in opt_buf
             ]
             cur['type'] = 'mcq'
         result.append(cur)
-    if not result:
-        result = [
-            {
-                'text':           l.strip(),
-                'type':           'subjective',
-                'marks':          1,
-                'options':        [],
-                'correct_option': '',
-                'model_answer':   ''
-            }
-            for l in lines
-            if l.strip() and len(l.strip()) > 10
-        ]
-    return result
 
-# ═══════════════════════════════════════════════════════════════════════════
+    # Plain lines fallback
+    if not result:
+        result = [{
+            'text':           l.strip(),
+            'type':           'subjective',
+            'marks':          1,
+            'options':        [],
+            'correct_option': '',
+            'model_answer':   '',
+        } for l in lines
+          if l.strip() and len(l.strip()) > 10]
+
+    print(f"[Fallback] ✅ {len(result)} questions")
+    return result# ═══════════════════════════════════════════════════════════════════════════
 # QUESTIONS API
 # ═══════════════════════════════════════════════════════════════════════════
 @app.route('/api/exams/<exam_id>/questions',
