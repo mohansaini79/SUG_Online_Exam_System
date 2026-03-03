@@ -18,6 +18,16 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
+# ── gevent monkey-patch FIRST (before everything) ─────────────────────────
+try:
+    from gevent import monkey
+    monkey.patch_all()
+    GEVENT_OK = True
+    print("[OK] gevent monkey-patch applied")
+except ImportError:
+    GEVENT_OK = False
+    print("[WARN] gevent not installed — using threading")
+
 from flask import (
     Flask, render_template, request, session,
     jsonify, redirect, url_for
@@ -46,7 +56,7 @@ except ImportError:
     PYPDF_OK = False
     print("[WARN] pypdf not installed")
 
-# ── Optional: python-docx ──────────────────────────────────────────────────
+# ── Optional: python-docx ──────────────────────��───────────────────────────
 try:
     from docx import Document
     DOCX_OK = True
@@ -61,48 +71,61 @@ try:
     GROQ_OK = True
 except ImportError:
     GROQ_OK = False
-    print("[WARN] groq not installed — pip install groq")
+    print("[WARN] groq not installed")
 
 GROQ_KEY = os.environ.get('GROQ_API_KEY', '')
 if GROQ_OK and GROQ_KEY:
-    print(f"[OK] Groq AI ready — key: {GROQ_KEY[:8]}...{GROQ_KEY[-4:]}")
+    print(f"[OK] Groq AI ready — "
+          f"key: {GROQ_KEY[:8]}...{GROQ_KEY[-4:]}")
 else:
-    print("[WARN] GROQ_API_KEY not set — AI will use keyword fallback")
+    print("[WARN] GROQ_API_KEY not set — "
+          "AI will use keyword fallback")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # CONFIG
 # ═══════════════════════════════════════════════════════════════════════════
-FACULTY_REG_KEY = os.environ.get('FACULTY_REGISTRATION_KEY', 'CS')
+FACULTY_REG_KEY = os.environ.get(
+    'FACULTY_REGISTRATION_KEY', 'CS')
 ROLL_REGEX      = re.compile(r'^\d{11}$')
-ADMIN_USER      = os.environ.get('ADMIN_USERNAME',  'admin')
-ADMIN_PASS      = os.environ.get('ADMIN_PASSWORD',  'Admin@SUG#2026')
-IS_PRODUCTION   = os.environ.get('FLASK_ENV', '') == 'production'
+ADMIN_USER      = os.environ.get(
+    'ADMIN_USERNAME', 'admin')
+ADMIN_PASS      = os.environ.get(
+    'ADMIN_PASSWORD', 'Admin@SUG#2026')
+IS_PRODUCTION   = (
+    os.environ.get('FLASK_ENV', '') == 'production')
+
+# ── async_mode auto-detect ─────────────────────────────────────────────────
+if GEVENT_OK:
+    ASYNC_MODE = 'gevent'
+else:
+    ASYNC_MODE = 'threading'
+print(f"[OK] SocketIO async_mode = {ASYNC_MODE}")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # APP SETUP
 # ═══════════════════════════════════════════════════════════════════════════
 app = Flask(__name__)
 
-# ★ ProxyFix — Render/Azure reverse proxy ke liye ★
+# ★ ProxyFix — Render/Azure reverse proxy ★
 app.wsgi_app = ProxyFix(
     app.wsgi_app,
     x_for=1, x_proto=1, x_host=1, x_port=1
 )
 
-app.config['SECRET_KEY']                 = os.environ.get(
+app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', 'exampro-sug-2026-xyz')
-app.config['SESSION_COOKIE_NAME']        = 'exampro_sid'
-app.config['SESSION_COOKIE_HTTPONLY']    = True
-app.config['SESSION_COOKIE_SAMESITE']   = 'Lax'
-# ★ Production mein HTTPS hai to Secure=True ★
-app.config['SESSION_COOKIE_SECURE']     = IS_PRODUCTION
-app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(hours=8)
+app.config['SESSION_COOKIE_NAME']     = 'exampro_sid'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE']   = IS_PRODUCTION
+app.config['PERMANENT_SESSION_LIFETIME'] = (
+    datetime.timedelta(hours=8))
 
 bcrypt   = Bcrypt(app)
 socketio = SocketIO(
     app,
     cors_allowed_origins = '*',
-    async_mode          = 'threading',
+    async_mode          = ASYNC_MODE,
     logger              = False,
     engineio_logger     = False
 )
@@ -115,15 +138,16 @@ MONGO_URI = os.environ.get('MONGO_URI', '')
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI not set in .env!")
 
-client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=8000)
+mongo_client = MongoClient(
+    MONGO_URI, serverSelectionTimeoutMS=8000)
 try:
-    client.admin.command('ping')
+    mongo_client.admin.command('ping')
     print("[OK] MongoDB connected")
 except Exception as e:
     print(f"[ERROR] MongoDB: {e}")
     raise
 
-db                = client['examdb']
+db                = mongo_client['examdb']
 users_col         = db['users']
 exams_col         = db['exams']
 questions_col     = db['questions']
@@ -135,21 +159,29 @@ notifications_col = db['notifications']
 
 try:
     users_col.create_index(
-        [('username', ASCENDING), ('role', ASCENDING)],
+        [('username', ASCENDING),
+         ('role', ASCENDING)],
         unique=False, sparse=True)
     users_col.create_index(
-        [('roll_number', ASCENDING), ('role', ASCENDING)],
+        [('roll_number', ASCENDING),
+         ('role', ASCENDING)],
         unique=False, sparse=True)
-    users_col.create_index([('email', ASCENDING)], sparse=True)
-    exams_col.create_index([('exam_id', ASCENDING)], unique=True)
+    users_col.create_index(
+        [('email', ASCENDING)], sparse=True)
+    exams_col.create_index(
+        [('exam_id', ASCENDING)], unique=True)
     questions_col.create_index(
-        [('exam_id', ASCENDING), ('index', ASCENDING)])
+        [('exam_id', ASCENDING),
+         ('index', ASCENDING)])
     answers_col.create_index(
-        [('exam_id', ASCENDING), ('user_id', ASCENDING)])
+        [('exam_id', ASCENDING),
+         ('user_id', ASCENDING)])
     results_col.create_index(
-        [('exam_id', ASCENDING), ('user_id', ASCENDING)])
+        [('exam_id', ASCENDING),
+         ('user_id', ASCENDING)])
     violations_col.create_index(
-        [('exam_id', ASCENDING), ('user_id', ASCENDING)])
+        [('exam_id', ASCENDING),
+         ('user_id', ASCENDING)])
     print("[OK] Indexes ready")
 except Exception:
     print("[INFO] Indexes already exist")
@@ -191,17 +223,21 @@ def device_fp():
         ua  = request.headers.get('User-Agent', '')
         ip  = request.remote_addr or ''
         raw = ua + ip + app.config['SECRET_KEY']
-        return hashlib.sha256(raw.encode()).hexdigest()[:16]
+        return hashlib.sha256(
+            raw.encode()).hexdigest()[:16]
     except Exception:
         return 'unknown'
 
 def remaining_seconds(exam, ans_doc):
     try:
-        duration = int(exam.get('duration_mins', 60)) * 60
+        duration = int(
+            exam.get('duration_mins', 60)) * 60
         started  = ans_doc.get('start_time', utcnow())
         if isinstance(started, str):
-            started = datetime.datetime.fromisoformat(started)
-        elapsed = (utcnow() - started).total_seconds()
+            started = datetime.datetime.fromisoformat(
+                started)
+        elapsed = (
+            utcnow() - started).total_seconds()
         return max(0, int(duration - elapsed))
     except Exception:
         return 0
@@ -214,7 +250,8 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
             if request.path.startswith('/api/'):
-                return jsonify({'error': 'Unauthorized'}), 401
+                return jsonify(
+                    {'error': 'Unauthorized'}), 401
             return redirect(url_for('login_page'))
         return f(*args, **kwargs)
     return decorated
@@ -225,7 +262,8 @@ def role_required(*roles):
         @login_required
         def decorated(*args, **kwargs):
             if session.get('role') not in roles:
-                return jsonify({'error': 'Forbidden'}), 403
+                return jsonify(
+                    {'error': 'Forbidden'}), 403
             return f(*args, **kwargs)
         return decorated
     return decorator
@@ -236,9 +274,10 @@ def role_required(*roles):
 @app.route('/')
 def index():
     if 'user_id' in session:
-        return redirect(url_for('faculty_dashboard')
-                        if session.get('role') == 'faculty'
-                        else url_for('student_dashboard'))
+        return redirect(
+            url_for('faculty_dashboard')
+            if session.get('role') == 'faculty'
+            else url_for('student_dashboard'))
     return redirect(url_for('login_page'))
 
 @app.route('/login')
@@ -262,13 +301,14 @@ def faculty_dashboard():
 @app.route('/exam/<exam_id>')
 @role_required('student')
 def exam_page(exam_id):
-    return render_template('exam.html', exam_id=exam_id)
+    return render_template(
+        'exam.html', exam_id=exam_id)
 
 @app.route('/faculty/checking/<exam_id>')
 @role_required('faculty')
 def answer_checking(exam_id):
-    return render_template('answer_checking.html',
-                           exam_id=exam_id)
+    return render_template(
+        'answer_checking.html', exam_id=exam_id)
 
 @app.route('/results')
 @login_required
@@ -278,28 +318,35 @@ def results_page():
 @app.route('/results/<exam_id>')
 @login_required
 def results_exam_page(exam_id):
-    return render_template('results.html', exam_id=exam_id)
+    return render_template(
+        'results.html', exam_id=exam_id)
 
 @app.route('/ranking/<exam_id>')
 @login_required
 def ranking_page(exam_id):
-    return render_template('ranking.html', exam_id=exam_id)
+    return render_template(
+        'ranking.html', exam_id=exam_id)
 
 @app.route('/analytics/<exam_id>')
 @role_required('faculty')
 def analytics_page(exam_id):
-    return render_template('analytics.html', exam_id=exam_id)
+    return render_template(
+        'analytics.html', exam_id=exam_id)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # AUTH API
 # ═══════════════════════════════════════════════════════════════════════════
-@app.route('/api/auth/register/student', methods=['POST'])
+@app.route('/api/auth/register/student',
+           methods=['POST'])
 def register_student():
     try:
-        data        = request.get_json(silent=True) or {}
+        data        = request.get_json(
+            silent=True) or {}
         name        = data.get('name', '').strip()
-        roll_number = data.get('roll_number', '').strip()
-        email       = data.get('email', '').strip().lower()
+        roll_number = data.get(
+            'roll_number', '').strip()
+        email       = data.get(
+            'email', '').strip().lower()
         password    = data.get('password', '').strip()
         course      = data.get('course', '').strip()
         semester    = data.get('semester', '').strip()
@@ -312,26 +359,29 @@ def register_student():
                 {'error': 'Roll number is required'}), 400
         if not ROLL_REGEX.match(roll_number):
             return jsonify({'error':
-                'Roll number must be exactly 11 digits '
-                '(e.g. 23014168059)'}), 400
+                'Roll number must be exactly 11 '
+                'digits (e.g. 23014168059)'}), 400
         if not password or len(password) < 6:
             return jsonify({'error':
-                'Password must be at least 6 '
-                'characters'}), 400
+                'Password must be at least '
+                '6 characters'}), 400
         if users_col.find_one(
                 {'roll_number': roll_number,
                  'role': 'student'}):
             return jsonify({'error':
-                f'Roll number {roll_number} is already '
-                f'registered'}), 409
-        if email and users_col.find_one({'email': email}):
+                f'Roll number {roll_number} is '
+                f'already registered'}), 409
+        if email and users_col.find_one(
+                {'email': email}):
             return jsonify(
-                {'error': 'Email already registered'}), 409
+                {'error': 'Email already '
+                          'registered'}), 409
 
         hashed = bcrypt.generate_password_hash(
             password).decode('utf-8')
         doc = {
-            'user_id':     str(uuid.uuid4())[:8].upper(),
+            'user_id':     str(
+                uuid.uuid4())[:8].upper(),
             'role':        'student',
             'name':        name,
             'username':    roll_number,
@@ -348,7 +398,8 @@ def register_student():
         print(f"[REGISTER] ✅ Student: "
               f"{roll_number} — {name}")
         return jsonify({
-            'message': f'Account created! Welcome {name}',
+            'message': f'Account created! '
+                       f'Welcome {name}',
             'user_id': doc['user_id']
         }), 201
     except Exception as e:
@@ -356,11 +407,14 @@ def register_student():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/auth/register/faculty', methods=['POST'])
+@app.route('/api/auth/register/faculty',
+           methods=['POST'])
 def register_faculty():
     try:
-        data       = request.get_json(silent=True) or {}
-        secret_key = data.get('secret_key', '').strip()
+        data       = request.get_json(
+            silent=True) or {}
+        secret_key = data.get(
+            'secret_key', '').strip()
 
         if secret_key != FACULTY_REG_KEY:
             print(f"[SECURITY] ❌ Wrong faculty key "
@@ -370,10 +424,13 @@ def register_faculty():
                 'Contact Admin / HOD.'}), 403
 
         name     = data.get('name', '').strip()
-        username = data.get('username', '').strip().lower()
-        email    = data.get('email', '').strip().lower()
+        username = data.get(
+            'username', '').strip().lower()
+        email    = data.get(
+            'email', '').strip().lower()
         password = data.get('password', '').strip()
-        emp_id   = data.get('employee_id', '').strip()
+        emp_id   = data.get(
+            'employee_id', '').strip()
 
         if not name:
             return jsonify(
@@ -381,7 +438,8 @@ def register_faculty():
         if not username:
             return jsonify(
                 {'error': 'Username is required'}), 400
-        if not re.match(r'^[a-zA-Z0-9_.]+$', username):
+        if not re.match(
+                r'^[a-zA-Z0-9_.]+$', username):
             return jsonify({'error':
                 'Username: only letters, numbers, '
                 'dot, underscore'}), 400
@@ -390,25 +448,30 @@ def register_faculty():
                 'Faculty password must be at least '
                 '8 characters'}), 400
         if users_col.find_one(
-                {'username': username, 'role': 'faculty'}):
+                {'username': username,
+                 'role': 'faculty'}):
             return jsonify({'error':
                 f'Username "{username}" already '
                 f'taken'}), 409
-        if email and users_col.find_one({'email': email}):
+        if email and users_col.find_one(
+                {'email': email}):
             return jsonify(
-                {'error': 'Email already registered'}), 409
+                {'error': 'Email already '
+                          'registered'}), 409
 
         hashed = bcrypt.generate_password_hash(
             password).decode('utf-8')
         doc = {
-            'user_id':     str(uuid.uuid4())[:8].upper(),
+            'user_id':     str(
+                uuid.uuid4())[:8].upper(),
             'role':        'faculty',
             'name':        name,
             'username':    username,
             'email':       email,
             'password':    hashed,
             'employee_id': emp_id,
-            'department':  'Computer Science & Technology',
+            'department':  (
+                'Computer Science & Technology'),
             'is_active':   True,
             'created_at':  utcnow(),
             'last_login':  None
@@ -440,30 +503,35 @@ def api_login():
     try:
         data = request.get_json(silent=True)
         if not data:
-            return jsonify({'error': 'Invalid JSON'}), 400
+            return jsonify(
+                {'error': 'Invalid JSON'}), 400
 
-        role     = str(data.get('role',
-                                'student')).strip()
-        password = str(data.get('password', '')).strip()
+        role     = str(
+            data.get('role', 'student')).strip()
+        password = str(
+            data.get('password', '')).strip()
 
         if not password:
             return jsonify(
                 {'error': 'Password required'}), 400
         if role not in ['student', 'faculty']:
-            return jsonify({'error': 'Invalid role'}), 400
+            return jsonify(
+                {'error': 'Invalid role'}), 400
 
         if role == 'student':
             roll = str(
                 data.get('roll_number', '')).strip()
             if not roll:
                 return jsonify(
-                    {'error': 'Roll number required'}), 400
+                    {'error': 'Roll number '
+                              'required'}), 400
             if not ROLL_REGEX.match(roll):
                 return jsonify({'error':
                     'Roll number must be exactly '
                     '11 digits'}), 400
             user = users_col.find_one(
-                {'roll_number': roll, 'role': 'student'})
+                {'roll_number': roll,
+                 'role': 'student'})
             if not user:
                 return jsonify({'error':
                     'Student not found. Please '
@@ -473,9 +541,11 @@ def api_login():
                 data.get('username', '')).strip()
             if not uname:
                 return jsonify(
-                    {'error': 'Username required'}), 400
+                    {'error': 'Username '
+                              'required'}), 400
             user = users_col.find_one(
-                {'username': uname, 'role': 'faculty'})
+                {'username': uname,
+                 'role': 'faculty'})
             if not user:
                 return jsonify({'error':
                     'Faculty not found. Please '
@@ -497,13 +567,14 @@ def api_login():
                 {'error': 'Incorrect password'}), 401
 
         session.clear()
-        session.permanent      = True
-        session['user_id']     = str(user['_id'])
-        session['role']        = user['role']
-        session['username']    = str(
+        session.permanent   = True
+        session['user_id']  = str(user['_id'])
+        session['role']     = user['role']
+        session['username'] = str(
             user.get('username')
             or user.get('roll_number', ''))
-        session['name']        = str(user.get('name', ''))
+        session['name']        = str(
+            user.get('name', ''))
         session['fingerprint'] = device_fp()
 
         users_col.update_one(
@@ -516,7 +587,8 @@ def api_login():
             else '/student/dashboard'
         )
         print(f"[LOGIN] ✅ {user['role']}: "
-              f"{session['username']} — {user['name']}")
+              f"{session['username']} — "
+              f"{user['name']}")
         return jsonify({
             'message':  'Login successful',
             'role':     user['role'],
@@ -530,11 +602,13 @@ def api_login():
 
 
 # ★ logout — GET + POST both support ★
-@app.route('/api/auth/logout', methods=['POST', 'GET'])
+@app.route('/api/auth/logout',
+           methods=['POST', 'GET'])
 def api_logout():
     name = session.get('name', 'User')
     session.clear()
-    resp = jsonify({'message': f'Goodbye {name}!'})
+    resp = jsonify(
+        {'message': f'Goodbye {name}!'})
     resp.delete_cookie(
         app.config['SESSION_COOKIE_NAME'],
         path='/'
@@ -574,28 +648,31 @@ def create_exam():
         data    = request.get_json(silent=True) or {}
         exam_id = str(uuid.uuid4())[:8].upper()
         doc = {
-            'exam_id':         exam_id,
-            'title':           data.get('title', 'Untitled'),
-            'subject':         data.get('subject', ''),
-            'duration_mins':   int(
+            'exam_id':       exam_id,
+            'title':         data.get(
+                'title', 'Untitled'),
+            'subject':       data.get('subject', ''),
+            'duration_mins': int(
                 data.get('duration_mins', 60)),
-            'total_marks':     int(
+            'total_marks':   int(
                 data.get('total_marks', 100)),
-            'pass_marks':      int(
+            'pass_marks':    int(
                 data.get('pass_marks', 40)),
-            'start_time':      datetime.datetime.fromisoformat(
-                data['start_time']),
-            'end_time':        datetime.datetime.fromisoformat(
-                data['end_time']),
-            'created_by':      session['user_id'],
-            'status':          'scheduled',
-            'randomize_q':     bool(
+            'start_time':    (
+                datetime.datetime.fromisoformat(
+                    data['start_time'])),
+            'end_time':      (
+                datetime.datetime.fromisoformat(
+                    data['end_time'])),
+            'created_by':    session['user_id'],
+            'status':        'scheduled',
+            'randomize_q':   bool(
                 data.get('randomize_q', True)),
-            'randomize_o':     bool(
+            'randomize_o':   bool(
                 data.get('randomize_o', True)),
             'violation_limit': int(
                 data.get('violation_limit', 3)),
-            'created_at':      utcnow()
+            'created_at':    utcnow()
         }
         exams_col.insert_one(doc)
         try:
@@ -628,23 +705,28 @@ def create_exam():
 def get_exam(exam_id):
     exam = exams_col.find_one({'exam_id': exam_id})
     if not exam:
-        return jsonify({'error': 'Exam not found'}), 404
+        return jsonify(
+            {'error': 'Exam not found'}), 404
     return jsonify(bson_to_dict(exam))
 
 
-@app.route('/api/exams/<exam_id>/start', methods=['POST'])
+@app.route('/api/exams/<exam_id>/start',
+           methods=['POST'])
 @role_required('faculty')
 def manual_start_exam(exam_id):
     auto_start_exam(exam_id)
-    return jsonify({'message': f'Exam {exam_id} started'})
+    return jsonify(
+        {'message': f'Exam {exam_id} started'})
 
 
-@app.route('/api/exams/<exam_id>/stop', methods=['POST'])
+@app.route('/api/exams/<exam_id>/stop',
+           methods=['POST'])
 @role_required('faculty')
 def stop_exam(exam_id):
     exam = exams_col.find_one({'exam_id': exam_id})
     if not exam:
-        return jsonify({'error': 'Exam not found'}), 404
+        return jsonify(
+            {'error': 'Exam not found'}), 404
     exams_col.update_one(
         {'exam_id': exam_id},
         {'$set': {'status': 'ended'}})
@@ -671,12 +753,14 @@ def stop_exam(exam_id):
     })
 
 
-@app.route('/api/exams/<exam_id>', methods=['DELETE'])
+@app.route('/api/exams/<exam_id>',
+           methods=['DELETE'])
 @role_required('faculty')
 def delete_exam(exam_id):
     exam = exams_col.find_one({'exam_id': exam_id})
     if not exam:
-        return jsonify({'error': 'Exam not found'}), 404
+        return jsonify(
+            {'error': 'Exam not found'}), 404
     title = exam.get('title', 'Exam')
     exams_col.delete_one({'exam_id': exam_id})
     questions_col.delete_many({'exam_id': exam_id})
@@ -693,10 +777,11 @@ def delete_exam(exam_id):
     except Exception:
         pass
     socketio.emit('exam_deleted',
-                  {'exam_id': exam_id, 'title': title})
+                  {'exam_id': exam_id,
+                   'title':   title})
     print(f"[EXAM] Deleted: {exam_id} — {title}")
-    return jsonify(
-        {'message': f'Exam "{title}" deleted successfully'})
+    return jsonify({'message':
+        f'Exam "{title}" deleted successfully'})
 
 
 def auto_start_exam(exam_id):
@@ -706,7 +791,8 @@ def auto_start_exam(exam_id):
         {'$set': {'status': 'live'}})
     socketio.emit('exam_started', {
         'exam_id': exam_id,
-        'title':   exam.get('title', '') if exam else ''
+        'title':   (exam.get('title', '')
+                    if exam else '')
     })
     print(f"[EXAM] Started: {exam_id}")
 
@@ -726,7 +812,8 @@ def auto_end_exam(exam_id):
                 'auto_submitted': True
             }})
         auto_grade(exam_id, str(ans['user_id']))
-    socketio.emit('exam_ended', {'exam_id': exam_id})
+    socketio.emit('exam_ended',
+                  {'exam_id': exam_id})
     print(f"[EXAM] Ended: {exam_id}, "
           f"auto-submitted {len(active)}")
 
@@ -800,7 +887,8 @@ JSON array only:"""
             max_tokens  = 4096
         )
         raw = resp.choices[0].message.content.strip()
-        print(f"[AI Parse] Response: {len(raw)} chars")
+        print(f"[AI Parse] Response: "
+              f"{len(raw)} chars")
         raw = re.sub(r'```json\s*', '', raw)
         raw = re.sub(r'```\s*',     '', raw)
         raw = raw.strip()
@@ -816,7 +904,8 @@ JSON array only:"""
             if not txt or len(txt) < 5:
                 continue
             qtype = str(
-                q.get('type', 'subjective')).lower()
+                q.get('type',
+                      'subjective')).lower()
             if qtype not in ('mcq', 'subjective'):
                 qtype = 'subjective'
             opts = [str(o).strip()
@@ -837,7 +926,8 @@ JSON array only:"""
                     q.get('model_answer',
                           '')).strip()
             })
-        print(f"[AI Parse] ✅ {len(cleaned)} questions")
+        print(f"[AI Parse] ✅ "
+              f"{len(cleaned)} questions")
         return cleaned if cleaned else None
     except json.JSONDecodeError as e:
         print(f"[AI Parse] JSON error: {e}")
@@ -848,8 +938,8 @@ JSON array only:"""
         return None
 
 
-def ai_generate_model_answers(questions,
-                               subject='General'):
+def ai_generate_model_answers(
+        questions, subject='General'):
     client_ai = get_groq_client()
     if not client_ai:
         return questions
@@ -869,14 +959,15 @@ def ai_generate_model_answers(questions,
         q_text = '\n\n'.join([
             f"Q{idx+1} ({q['type']}, "
             f"{q['marks']} marks): {q['text']}"
-            + (f"\nOptions: {', '.join(q['options'])}"
+            + (f"\nOptions: "
+               f"{', '.join(q['options'])}"
                if q.get('options') else '')
             for idx, (_, q) in enumerate(batch)
         ])
         prompt = (
-            f"You are an expert {subject} professor.\n"
-            f"Write detailed model answers.\n\n"
-            f"{q_text}\n\n"
+            f"You are an expert {subject} "
+            f"professor.\nWrite detailed model "
+            f"answers.\n\n{q_text}\n\n"
             f"Return ONLY JSON array:\n"
             f'[{{"answer": "..."}}]'
         )
@@ -888,7 +979,8 @@ def ai_generate_model_answers(questions,
                 temperature = 0.2,
                 max_tokens  = 3000
             )
-            raw = resp.choices[0].message.content.strip()
+            raw = (resp.choices[0]
+                   .message.content.strip())
             raw = re.sub(r'```json\s*', '', raw)
             raw = re.sub(r'```\s*',     '', raw)
             start   = raw.find('[')
@@ -927,8 +1019,10 @@ def fallback_parse_questions(text):
             if cur:
                 if len(opt_buf) >= 2:
                     cur['options'] = [
-                        re.sub(r'^[a-d][.)]\s+', '',
-                               o, flags=re.I).strip()
+                        re.sub(
+                            r'^[a-d][.)]\s+', '',
+                            o,
+                            flags=re.I).strip()
                         for o in opt_buf
                     ]
                     cur['type'] = 'mcq'
@@ -980,90 +1074,81 @@ def save_questions(exam_id):
     try:
         data = request.get_json(silent=True) or {}
         qs   = data.get('questions', [])
-        questions_col.delete_many({'exam_id': exam_id})
+        questions_col.delete_many(
+            {'exam_id': exam_id})
         docs = [{
             'exam_id':        exam_id,
             'index':          i,
-            'type':           q.get('type', 'subjective'),
+            'type':           q.get(
+                'type', 'subjective'),
             'text':           q.get('text', ''),
             'options':        q.get('options', []),
             'correct_option': q.get(
                 'correct_option', None),
-            'model_answer':   q.get('model_answer', ''),
-            'marks':          int(q.get('marks', 1)),
+            'model_answer':   q.get(
+                'model_answer', ''),
+            'marks':          int(
+                q.get('marks', 1)),
             'created_at':     utcnow()
         } for i, q in enumerate(qs)]
         if docs:
             questions_col.insert_many(docs)
-        return jsonify(
-            {'message': f'{len(docs)} questions saved'})
+        return jsonify({'message':
+            f'{len(docs)} questions saved'})
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/exams/<exam_id>/questions/upload',
-           methods=['POST'])
+@app.route(
+    '/api/exams/<exam_id>/questions/upload',
+    methods=['POST'])
 @role_required('faculty')
 def upload_file(exam_id):
-    """
-    ★ FILE UPLOAD — PDF/DOCX/TXT ★
-    PDF   → pypdf (Render) or fitz (local)
-    DOCX  → python-docx
-    TXT   → plain text
-    """
     f = request.files.get('file')
     if not f:
-        return jsonify({'error': 'No file uploaded'}), 400
+        return jsonify(
+            {'error': 'No file uploaded'}), 400
 
     fname = (f.filename or '').lower().strip()
     text  = ''
 
     try:
-        # ══════════════════════════════════════════
-        # PDF
-        # ══════════════════════════════════════════
         if fname.endswith('.pdf'):
             raw_bytes = f.read()
-
             if PYMUPDF_OK:
-                # Local: fitz use karo
                 doc = fitz.open(
-                    stream=raw_bytes, filetype='pdf')
+                    stream=raw_bytes,
+                    filetype='pdf')
                 for page in doc:
-                    text += page.get_text('text') + '\n'
+                    text += (
+                        page.get_text('text') + '\n')
                 doc.close()
                 print(f"[PDF] fitz: "
                       f"{len(text)} chars")
-
             elif PYPDF_OK:
-                # Render: pypdf use karo
-                reader = PdfReader(io.BytesIO(raw_bytes))
+                reader = PdfReader(
+                    io.BytesIO(raw_bytes))
                 for page in reader.pages:
                     extracted = page.extract_text()
                     if extracted:
                         text += extracted + '\n'
                 print(f"[PDF] pypdf: "
-                      f"{len(reader.pages)} pages, "
-                      f"{len(text)} chars")
-
+                      f"{len(reader.pages)} pages")
             else:
                 return jsonify({'error':
                     'PDF library not available. '
-                    'Please upload a .txt or '
-                    '.docx file instead.'}), 500
+                    'Upload .txt or .docx '
+                    'instead.'}), 500
 
-        # ══════════════════════════════════════════
-        # DOCX
-        # ══════════════════════════════════════════
         elif fname.endswith('.docx'):
             if not DOCX_OK:
                 return jsonify({'error':
                     'DOCX library not available. '
-                    'Please upload a .txt '
-                    'file instead.'}), 500
+                    'Upload .txt instead.'}), 500
             raw_bytes = f.read()
-            doc       = Document(io.BytesIO(raw_bytes))
+            doc       = Document(
+                io.BytesIO(raw_bytes))
             lines     = []
             for p in doc.paragraphs:
                 if p.text.strip():
@@ -1075,15 +1160,11 @@ def upload_file(exam_id):
                             lines.append(
                                 cell.text.strip())
             text = '\n'.join(lines)
-            print(f"[DOCX] {len(lines)} lines, "
-                  f"{len(text)} chars")
+            print(f"[DOCX] {len(lines)} lines")
 
-        # ══════════════════════════════════════════
-        # TXT
-        # ══════════════════════════════════════════
         elif fname.endswith('.txt'):
-            text = f.read().decode('utf-8',
-                                   errors='ignore')
+            text = f.read().decode(
+                'utf-8', errors='ignore')
             print(f"[TXT] {len(text)} chars")
 
         else:
@@ -1093,29 +1174,30 @@ def upload_file(exam_id):
 
     except Exception as e:
         traceback.print_exc()
-        return jsonify(
-            {'error': f'File read error: {str(e)}'}), 500
+        return jsonify({'error':
+            f'File read error: {str(e)}'}), 500
 
     text = text.strip()
     if not text or len(text) < 15:
         return jsonify({'error':
-            'No readable text found in file. '
-            'Try a .txt file with questions.'}), 400
+            'No readable text found. '
+            'Try a .txt file.'}), 400
 
     print(f"[UPLOAD] '{f.filename}' → "
-          f"{len(text)} chars | exam={exam_id}")
+          f"{len(text)} chars | "
+          f"exam={exam_id}")
 
-    exam    = exams_col.find_one({'exam_id': exam_id})
+    exam    = exams_col.find_one(
+        {'exam_id': exam_id})
     subject = ((exam.get('subject') or 'General')
                if exam else 'General')
 
-    # ── AI Parse ──────────────────────────────────
     questions = None
     try:
-        questions = ai_parse_questions(text, subject)
+        questions = ai_parse_questions(
+            text, subject)
     except Exception as e:
         print(f"[AI Parse] Exception: {e}")
-        questions = None
 
     if questions:
         empty_ans = sum(
@@ -1124,11 +1206,11 @@ def upload_file(exam_id):
         )
         if empty_ans > 0:
             try:
-                questions = ai_generate_model_answers(
-                    questions, subject)
+                questions = (
+                    ai_generate_model_answers(
+                        questions, subject))
             except Exception as e:
                 print(f"[AI Answers] Error: {e}")
-
         print(f"[UPLOAD] ✅ AI: "
               f"{len(questions)} questions")
         return jsonify({
@@ -1138,12 +1220,10 @@ def upload_file(exam_id):
             'subject':   subject,
             'message':   (
                 f'AI extracted {len(questions)} '
-                f'questions with model answers ✅'
-            )
+                f'questions ✅')
         })
 
-    # ── Fallback ────────────────��─────────────────
-    print("[UPLOAD] AI failed — fallback parser")
+    print("[UPLOAD] AI failed — fallback")
     questions = fallback_parse_questions(text)
     return jsonify({
         'questions': questions,
@@ -1151,8 +1231,7 @@ def upload_file(exam_id):
         'ai':        False,
         'message':   (
             f'Extracted {len(questions)} questions '
-            f'(AI unavailable — check GROQ_API_KEY)'
-        )
+            f'(check GROQ_API_KEY)')
     })
 
 
@@ -1162,7 +1241,8 @@ def upload_file(exam_id):
 def get_questions(exam_id):
     exam = exams_col.find_one({'exam_id': exam_id})
     if not exam:
-        return jsonify({'error': 'Exam not found'}), 404
+        return jsonify(
+            {'error': 'Exam not found'}), 404
     qs = list(questions_col.find(
         {'exam_id': exam_id}
     ).sort('index', ASCENDING))
@@ -1173,7 +1253,8 @@ def get_questions(exam_id):
                 ^ (hash(exam_id) & 0xFFFFFFFF)
             )
         except Exception:
-            seed = hash(session['user_id'] + exam_id)
+            seed = hash(
+                session['user_id'] + exam_id)
         rng = random.Random(seed)
         if exam.get('randomize_q'):
             rng.shuffle(qs)
@@ -1189,7 +1270,8 @@ def get_questions(exam_id):
                 q['options'] = opts
             result.append(q)
         return jsonify(result)
-    return jsonify([bson_to_dict(q) for q in qs])
+    return jsonify(
+        [bson_to_dict(q) for q in qs])
 
 # ═══════════════════════════════════════════════════════════════════════════
 # STUDENT SESSION / EXAM
@@ -1200,7 +1282,8 @@ def get_questions(exam_id):
 def start_session(exam_id):
     exam = exams_col.find_one({'exam_id': exam_id})
     if not exam:
-        return jsonify({'error': 'Exam not found'}), 404
+        return jsonify(
+            {'error': 'Exam not found'}), 404
     if exam['status'] not in ('live', 'scheduled'):
         return jsonify(
             {'error': 'Exam not active'}), 400
@@ -1229,8 +1312,10 @@ def start_session(exam_id):
     return jsonify({
         'message':   'Session ready',
         'answers':   existing.get('answers', {}),
-        'remaining': remaining_seconds(exam, existing),
-        'submitted': existing.get('submitted', False)
+        'remaining': remaining_seconds(
+            exam, existing),
+        'submitted': existing.get(
+            'submitted', False)
     })
 
 
@@ -1267,7 +1352,8 @@ def submit_exam(exam_id):
         {'exam_id': exam_id, 'user_id': uid},
         {'$set': {
             'answers':     data.get(
-                'answers', rec.get('answers', {})),
+                'answers',
+                rec.get('answers', {})),
             'submitted':   True,
             'submit_time': utcnow()
         }})
@@ -1277,7 +1363,8 @@ def submit_exam(exam_id):
         'user_id':  uid,
         'username': session['username']
     })
-    return jsonify({'message': 'Submitted successfully'})
+    return jsonify(
+        {'message': 'Submitted successfully'})
 
 
 @app.route('/api/exams/<exam_id>/heartbeat',
@@ -1292,7 +1379,8 @@ def heartbeat(exam_id):
     rec  = answers_col.find_one(
         {'exam_id': exam_id, 'user_id': uid})
     if not exam or not rec:
-        return jsonify({'error': 'Not found'}), 404
+        return jsonify(
+            {'error': 'Not found'}), 404
     return jsonify({
         'remaining': remaining_seconds(exam, rec),
         'status':    exam['status']
@@ -1311,10 +1399,10 @@ def auto_grade(exam_id, user_id):
         m      = int(q.get('marks', 1))
         total += m
         if (q['type'] == 'mcq'
-                and str(ans.get(str(q['_id']),
-                                '')).strip()
-                == str(q.get('correct_option',
-                             '')).strip()):
+                and str(ans.get(
+                    str(q['_id']), '')).strip()
+                == str(q.get(
+                    'correct_option', '')).strip()):
             obtained += m
     marks_col.update_one(
         {'exam_id': exam_id, 'user_id': user_id},
@@ -1378,7 +1466,8 @@ def update_marks(exam_id, user_id):
         {'$set': {
             'manual_marks': int(
                 data.get('manual_marks', 0)),
-            'remarks':      data.get('remarks', ''),
+            'remarks':      data.get(
+                'remarks', ''),
             'checked_by':   session['user_id'],
             'checked_at':   utcnow()
         }},
@@ -1403,8 +1492,10 @@ def publish_results(exam_id):
             continue
         total = (m.get('auto_marks', 0)
                  + m.get('manual_marks', 0))
-        rows.append({'user_id': uid, 'total': total})
-    rows.sort(key=lambda x: x['total'], reverse=True)
+        rows.append(
+            {'user_id': uid, 'total': total})
+    rows.sort(
+        key=lambda x: x['total'], reverse=True)
     n = len(rows)
     for i, r in enumerate(rows):
         rank       = i + 1
@@ -1436,9 +1527,8 @@ def publish_results(exam_id):
         )
     socketio.emit('result_published',
                   {'exam_id': exam_id})
-    return jsonify(
-        {'message':
-         f'Results published for {n} students'})
+    return jsonify({'message':
+        f'Results published for {n} students'})
 
 # ═══════════════════════════════════════════════════════════════════════════
 # RESULTS & RANKING
@@ -1453,10 +1543,12 @@ def get_results():
     else:
         docs = list(results_col.find(
             {'published': True}))
-    return jsonify([bson_to_dict(d) for d in docs])
+    return jsonify(
+        [bson_to_dict(d) for d in docs])
 
 
-@app.route('/api/results/<exam_id>', methods=['GET'])
+@app.route('/api/results/<exam_id>',
+           methods=['GET'])
 @login_required
 def get_exam_results(exam_id):
     docs = list(results_col.find(
@@ -1475,7 +1567,7 @@ def get_exam_results(exam_id):
         out.append(d)
     return jsonify(out)
 
-# ══════════════════���════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
 # VIOLATIONS
 # ═══════════════════════════════════════════════════════════════════════════
 @app.route('/api/exams/<exam_id>/violation',
@@ -1495,7 +1587,8 @@ def log_violation(exam_id):
     })
     count = violations_col.count_documents(
         {'exam_id': exam_id, 'user_id': uid})
-    exam  = exams_col.find_one({'exam_id': exam_id})
+    exam  = exams_col.find_one(
+        {'exam_id': exam_id})
     limit = (exam.get('violation_limit', 3)
              if exam else 3)
     socketio.emit('violation_alert', {
@@ -1518,7 +1611,8 @@ def log_violation(exam_id):
             'auto_submit': True,
             'message':     'Violation limit reached'
         })
-    return jsonify({'count': count, 'limit': limit})
+    return jsonify(
+        {'count': count, 'limit': limit})
 
 
 @app.route('/api/exams/<exam_id>/violations',
@@ -1528,15 +1622,18 @@ def get_violations(exam_id):
     docs = list(violations_col.find(
         {'exam_id': exam_id}
     ).sort('timestamp', DESCENDING))
-    return jsonify([bson_to_dict(d) for d in docs])
+    return jsonify(
+        [bson_to_dict(d) for d in docs])
 
 # ═══════════════════════════════════════════════════════════════════════════
 # ANALYTICS
 # ═══════════════════════════════════════════════════════════════════════════
-@app.route('/api/analytics/<exam_id>', methods=['GET'])
+@app.route('/api/analytics/<exam_id>',
+           methods=['GET'])
 @role_required('faculty')
 def analytics(exam_id):
-    exam   = exams_col.find_one({'exam_id': exam_id})
+    exam   = exams_col.find_one(
+        {'exam_id': exam_id})
     rdocs  = list(results_col.find(
         {'exam_id': exam_id}))
     scores = [r['total'] for r in rdocs]
@@ -1568,7 +1665,8 @@ def analytics(exam_id):
         'max_score':           max(scores),
         'score_distribution':  buckets,
         'violation_analytics': [
-            {'type': v['_id'], 'count': v['count']}
+            {'type':  v['_id'],
+             'count': v['count']}
             for v in viols
         ]
     })
@@ -1585,7 +1683,8 @@ def get_notifications():
             {'to': 'all'}
         ]}
     ).sort('created_at', DESCENDING).limit(20))
-    return jsonify([bson_to_dict(d) for d in docs])
+    return jsonify(
+        [bson_to_dict(d) for d in docs])
 
 # ═══════════════════════════════════════════════════════════════════════════
 # AI GRADING
@@ -1607,13 +1706,16 @@ def ai_grade(question, answer, marks,
             prompt = (
                 f"You are a strict but fair examiner "
                 f"for {subject}.\n\n"
-                f"QUESTION ({marks} marks): {question}\n"
+                f"QUESTION ({marks} marks): "
+                f"{question}\n"
                 f"STUDENT ANSWER: {answer}\n\n"
                 f"Respond ONLY with this JSON:\n"
                 f'{{"score": <0-{marks}>, '
                 f'"feedback": "<2-3 sentences>", '
-                f'"confidence": "<high|medium|low>", '
-                f'"key_points": ["<p1>", "<p2>"]}}'
+                f'"confidence": '
+                f'"<high|medium|low>", '
+                f'"key_points": '
+                f'["<p1>", "<p2>"]}}'
             )
             resp = client_ai.chat.completions.create(
                 model           = 'llama-3.1-8b-instant',
@@ -1626,30 +1728,33 @@ def ai_grade(question, answer, marks,
                 response_format = {
                     'type': 'json_object'}
             )
-            raw    = resp.choices[0].message.content
+            raw    = (
+                resp.choices[0].message.content)
             result = json.loads(raw)
             score  = max(0, min(
-                int(result.get('score', 0)), marks))
+                int(result.get('score', 0)),
+                marks))
             return {
                 'score':      score,
                 'out_of':     marks,
                 'feedback':   str(
                     result.get('feedback', '')),
                 'confidence': str(
-                    result.get('confidence',
-                               'medium')),
+                    result.get(
+                        'confidence', 'medium')),
                 'key_points': list(
                     result.get('key_points', [])),
-                'model':      'groq/llama-3.1-8b-instant'
+                'model': (
+                    'groq/llama-3.1-8b-instant')
             }
         except Exception as e:
             print(f"[AI Grade] Error: {e}")
 
-    # Keyword fallback
     stops = {
         'this','that','with','from','have','will',
-        'what','when','where','which','they','their',
-        'about','would','could','should','answer'
+        'what','when','where','which','they',
+        'their','about','would','could',
+        'should','answer'
     }
     qw    = set(re.findall(
         r'\b[a-z]{4,}\b',
@@ -1662,14 +1767,14 @@ def ai_grade(question, answer, marks,
         min(1.0,
             (len(qw & aw) / max(len(qw), 1))
             + min(0.2, wc / 50))
-        if qw
-        else min(1.0, wc / 30)
+        if qw else min(1.0, wc / 30)
     )
     score = round(marks * ratio)
     return {
         'score':      score,
         'out_of':     marks,
-        'feedback':   f'Keyword score: {score}/{marks}.',
+        'feedback':   (
+            f'Keyword score: {score}/{marks}.'),
         'confidence': 'low',
         'key_points': [
             f'{len(qw & aw)}/{len(qw)} '
@@ -1685,7 +1790,8 @@ def ai_grade(question, answer, marks,
 def ai_grade_all(exam_id, user_id):
     try:
         rec = answers_col.find_one(
-            {'exam_id': exam_id, 'user_id': user_id})
+            {'exam_id': exam_id,
+             'user_id': user_id})
         if not rec:
             return jsonify(
                 {'error': 'No submission'}), 404
@@ -1735,12 +1841,14 @@ def ai_grade_all(exam_id, user_id):
             }},
             upsert=True
         )
-        print(f"[AI Grade] ✅ {len(results)} graded, "
+        print(f"[AI Grade] ✅ "
+              f"{len(results)} graded, "
               f"{skipped} MCQ skipped, "
               f"total={total_ai}")
         return jsonify({
             'message':          (
-                f'AI graded {len(results)} questions'),
+                f'AI graded '
+                f'{len(results)} questions'),
             'total_ai_marks':   total_ai,
             'questions_graded': len(results),
             'results':          results
@@ -1771,7 +1879,7 @@ def get_ai_results(exam_id, user_id):
         'ai_model':            (
             m.get('ai_results') or [{}]
         )[0].get('model', 'unknown'),
-        'results':             m.get('ai_results', [])
+        'results': m.get('ai_results', [])
     })
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1796,8 +1904,9 @@ def admin_list_users():
     for u in users:
         u['_id'] = str(u['_id'])
         for field in ['created_at', 'last_login']:
-            if isinstance(u.get(field),
-                          datetime.datetime):
+            if isinstance(
+                    u.get(field),
+                    datetime.datetime):
                 u[field] = u[field].isoformat()
     return jsonify(users)
 
@@ -1829,8 +1938,10 @@ def admin_reset_password():
         return jsonify(
             {'error': 'Admin access only'}), 401
     data     = request.get_json(silent=True) or {}
-    roll     = data.get('roll_number', '').strip()
-    new_pass = data.get('new_password', '').strip()
+    roll     = data.get(
+        'roll_number', '').strip()
+    new_pass = data.get(
+        'new_password', '').strip()
     if not roll or not new_pass:
         return jsonify({'error':
             'roll_number and new_password '
@@ -1843,8 +1954,8 @@ def admin_reset_password():
     if r.matched_count == 0:
         return jsonify(
             {'error': 'Student not found'}), 404
-    return jsonify(
-        {'message': f'Password reset for {roll}'})
+    return jsonify({'message':
+        f'Password reset for {roll}'})
 
 # ═══════════════════════════════════════════════════════════════════════════
 # SOCKET.IO
@@ -1852,17 +1963,21 @@ def admin_reset_password():
 @socketio.on('connect')
 def on_connect():
     if 'user_id' in session:
-        join_room(f"student_{session['user_id']}")
+        join_room(
+            f"student_{session['user_id']}")
 
 @socketio.on('join_exam')
 def on_join(data):
-    join_room(f"exam_{data.get('exam_id', '')}")
+    join_room(
+        f"exam_{data.get('exam_id', '')}")
     emit('joined', {
-        'room': f"exam_{data.get('exam_id', '')}"})
+        'room': f"exam_{data.get('exam_id', '')}"
+    })
 
 @socketio.on('leave_exam')
 def on_leave(data):
-    leave_room(f"exam_{data.get('exam_id', '')}")
+    leave_room(
+        f"exam_{data.get('exam_id', '')}")
 
 @socketio.on('disconnect')
 def on_disconnect():
@@ -1875,7 +1990,8 @@ def on_disconnect():
 def static_images(filename):
     images_path = os.path.join(
         app.root_path, 'static', 'images')
-    full_path   = os.path.join(images_path, filename)
+    full_path   = os.path.join(
+        images_path, filename)
     if os.path.exists(full_path):
         return send_from_directory(
             images_path, filename)
@@ -1885,14 +2001,19 @@ def static_images(filename):
 # STARTUP
 # ═══════════════════════════════════════════════════════════════════════════
 def print_banner():
+    pdf_lib = (
+        'fitz'    if PYMUPDF_OK else
+        'pypdf'   if PYPDF_OK   else
+        'NONE'
+    )
     print("═" * 55)
-    print("  ExamPro — Shobhit University Gangoh (SUG)")
+    print("  ExamPro — Shobhit University Gangoh")
     print("  Team Believer © 2026")
+    print(f"  Async Mode : {ASYNC_MODE}")
+    print(f"  PDF Library: {pdf_lib}")
     print(f"  AI Parse   : llama3-70b-8192")
     print(f"  AI Grade   : llama-3.1-8b-instant")
     print(f"  Faculty Key: {FACULTY_REG_KEY}")
-    print(f"  PDF Library: "
-          f"{'fitz' if PYMUPDF_OK else 'pypdf' if PYPDF_OK else 'NONE'}")
     print(f"  Production : {IS_PRODUCTION}")
     print("═" * 55)
 
