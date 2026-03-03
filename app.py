@@ -3,6 +3,7 @@
 #  Team Believer © 2026
 # ═══════════════════════════════════════════════════════════════════════════
 import os
+import sys
 import uuid
 import json
 import re
@@ -11,6 +12,7 @@ import hashlib
 import datetime
 import traceback
 import io
+import warnings
 from functools import wraps
 from dotenv import load_dotenv
 from flask import send_from_directory
@@ -18,15 +20,12 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
-# ── gevent monkey-patch FIRST (before everything) ─────────────────────────
-try:
-    from gevent import monkey
-    monkey.patch_all()
-    GEVENT_OK = True
-    print("[OK] gevent monkey-patch applied")
-except ImportError:
-    GEVENT_OK = False
-    print("[WARN] gevent not installed — using threading")
+# ── eventlet monkey-patch FIRST (before everything) ───────────────────────
+import eventlet
+eventlet.monkey_patch()
+ASYNC_MODE = 'eventlet'
+print("[OK] eventlet monkey-patch applied")
+print(f"[OK] SocketIO mode = {ASYNC_MODE}")
 
 from flask import (
     Flask, render_template, request, session,
@@ -45,7 +44,7 @@ try:
     print("[OK] PyMuPDF (fitz) ready")
 except ImportError:
     PYMUPDF_OK = False
-    print("[WARN] PyMuPDF not installed — trying pypdf")
+    print("[INFO] PyMuPDF not available — using pypdf")
 
 # ── Optional: pypdf (Render fallback) ─────────────────────────────────────
 try:
@@ -56,7 +55,7 @@ except ImportError:
     PYPDF_OK = False
     print("[WARN] pypdf not installed")
 
-# ── Optional: python-docx ──────────────────────��───────────────────────────
+# ── Optional: python-docx ──────────────────────────────────────────────────
 try:
     from docx import Document
     DOCX_OK = True
@@ -67,8 +66,13 @@ except ImportError:
 
 # ── Optional: Groq AI ──────────────────────────────────────────────────────
 try:
+    warnings.filterwarnings(
+        'ignore',
+        message='Core Pydantic V1 functionality',
+        category=UserWarning)
     from groq import Groq as GroqClient
     GROQ_OK = True
+    print("[OK] groq ready")
 except ImportError:
     GROQ_OK = False
     print("[WARN] groq not installed")
@@ -94,13 +98,6 @@ ADMIN_PASS      = os.environ.get(
 IS_PRODUCTION   = (
     os.environ.get('FLASK_ENV', '') == 'production')
 
-# ── async_mode auto-detect ─────────────────────────────────────────────────
-if GEVENT_OK:
-    ASYNC_MODE = 'gevent'
-else:
-    ASYNC_MODE = 'threading'
-print(f"[OK] SocketIO async_mode = {ASYNC_MODE}")
-
 # ═══════════════════════════════════════════════════════════════════════════
 # APP SETUP
 # ═══════════════════════════════════════════════════════════════════════════
@@ -109,8 +106,7 @@ app = Flask(__name__)
 # ★ ProxyFix — Render/Azure reverse proxy ★
 app.wsgi_app = ProxyFix(
     app.wsgi_app,
-    x_for=1, x_proto=1, x_host=1, x_port=1
-)
+    x_for=1, x_proto=1, x_host=1, x_port=1)
 
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', 'exampro-sug-2026-xyz')
@@ -124,10 +120,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = (
 bcrypt   = Bcrypt(app)
 socketio = SocketIO(
     app,
-    cors_allowed_origins = '*',
-    async_mode          = ASYNC_MODE,
-    logger              = False,
-    engineio_logger     = False
+    cors_allowed_origins='*',
+    async_mode='eventlet',
+    ping_timeout=60,
+    ping_interval=25,
+    logger=False,
+    engineio_logger=False,
 )
 print("[OK] App initialized")
 
@@ -584,8 +582,7 @@ def api_login():
         redirect_url = (
             '/faculty/dashboard'
             if user['role'] == 'faculty'
-            else '/student/dashboard'
-        )
+            else '/student/dashboard')
         print(f"[LOGIN] ✅ {user['role']}: "
               f"{session['username']} — "
               f"{user['name']}")
@@ -611,8 +608,7 @@ def api_logout():
         {'message': f'Goodbye {name}!'})
     resp.delete_cookie(
         app.config['SESSION_COOKIE_NAME'],
-        path='/'
-    )
+        path='/')
     return resp
 
 
@@ -826,9 +822,7 @@ def get_groq_client():
     return None
 
 
-def ai_parse_questions(
-        text: str,
-        subject: str = 'General') -> list | None:
+def ai_parse_questions(text, subject='General'):
     client_ai = get_groq_client()
     if not client_ai:
         print("[AI Parse] Groq not available")
@@ -897,33 +891,26 @@ JSON array only:"""
         raw = resp.choices[0].message.content.strip()
         print(f"[AI Parse] Response: "
               f"{len(raw)} chars")
-
-        # Clean markdown
         raw = re.sub(r'```json\s*', '', raw)
         raw = re.sub(r'```\s*',     '', raw)
         raw = raw.strip()
-
-        # Extract JSON array
         start = raw.find('[')
         end   = raw.rfind(']') + 1
         if start == -1 or end <= start:
             print("[AI Parse] No JSON array")
             return None
-
         questions = json.loads(raw[start:end])
         cleaned   = []
-
         for q in questions:
             txt = str(q.get('text', '')).strip()
             if not txt or len(txt) < 5:
                 continue
-
             qtype = str(
                 q.get('type', 'subjective')).lower()
             if qtype not in ('mcq', 'subjective'):
                 qtype = 'subjective'
 
-            # ★ Clean options — remove A) a. (A) prefix ★
+            # ★ Clean options — A) a. (A) (a) prefix ★
             opts = []
             for o in q.get('options', []):
                 o = str(o).strip()
@@ -953,11 +940,9 @@ JSON array only:"""
                 'model_answer':   str(q.get(
                     'model_answer', '')).strip(),
             })
-
         print(f"[AI Parse] ✅ "
               f"{len(cleaned)} questions")
         return cleaned if cleaned else None
-
     except json.JSONDecodeError as e:
         print(f"[AI Parse] JSON error: {e}")
         return None
@@ -1029,11 +1014,11 @@ def ai_generate_model_answers(
     return questions
 
 
-def fallback_parse_questions(text: str) -> list:
+def fallback_parse_questions(text):
     lines   = text.split('\n')
     result  = []
     cur     = None
-    opt_buf: list[str] = []
+    opt_buf = []
 
     # Question: 1. / 1) / Q1. / Q1)
     q_re = re.compile(
@@ -1045,12 +1030,12 @@ def fallback_parse_questions(text: str) -> list:
         r'^\(?[a-dA-D][.)]\s+',
         re.IGNORECASE)
 
-    # Answer line: Answer: B) Queue
+    # Answer line
     ans_re = re.compile(
         r'^(?:answer|ans|correct)[:\s]+(.+)',
         re.IGNORECASE)
 
-    # Section headers skip
+    # Section headers skip karo
     skip_re = re.compile(
         r'^(?:section|part|chapter|mixed|exam)',
         re.IGNORECASE)
@@ -1101,7 +1086,7 @@ def fallback_parse_questions(text: str) -> list:
                 ans_m.group(1).strip())
             continue
 
-        # Append to current question text
+        # Append to current question
         if cur and len(line) > 5:
             cur['text'] += ' ' + line
 
@@ -1131,7 +1116,9 @@ def fallback_parse_questions(text: str) -> list:
           if l.strip() and len(l.strip()) > 10]
 
     print(f"[Fallback] ✅ {len(result)} questions")
-    return result# ═══════════════════════════════════════════════════════════════════════════
+    return result
+
+# ═══════════════════════════════════════════════════════════════════════════
 # QUESTIONS API
 # ═══════════════════════════════════════════════════════════════════════════
 @app.route('/api/exams/<exam_id>/questions',
@@ -1181,6 +1168,7 @@ def upload_file(exam_id):
     text  = ''
 
     try:
+        # ── PDF ───────────────────────────────
         if fname.endswith('.pdf'):
             raw_bytes = f.read()
             if PYMUPDF_OK:
@@ -1208,6 +1196,7 @@ def upload_file(exam_id):
                     'Upload .txt or .docx '
                     'instead.'}), 500
 
+        # ── DOCX ──────────────────────────────
         elif fname.endswith('.docx'):
             if not DOCX_OK:
                 return jsonify({'error':
@@ -1229,6 +1218,7 @@ def upload_file(exam_id):
             text = '\n'.join(lines)
             print(f"[DOCX] {len(lines)} lines")
 
+        # ── TXT ───────────────────────────────
         elif fname.endswith('.txt'):
             text = f.read().decode(
                 'utf-8', errors='ignore')
@@ -1317,8 +1307,7 @@ def get_questions(exam_id):
         try:
             seed = (
                 int(session['user_id'][:8], 16)
-                ^ (hash(exam_id) & 0xFFFFFFFF)
-            )
+                ^ (hash(exam_id) & 0xFFFFFFFF))
         except Exception:
             seed = hash(
                 session['user_id'] + exam_id)
@@ -1342,7 +1331,7 @@ def get_questions(exam_id):
 
 # ═══════════════════════════════════════════════════════════════════════════
 # STUDENT SESSION / EXAM
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════���═══════════════════════════════════════════════════
 @app.route('/api/exams/<exam_id>/session',
            methods=['POST'])
 @role_required('student')
@@ -1484,8 +1473,7 @@ def auto_grade(exam_id, user_id):
             'published':    False,
             'created_at':   utcnow()
         }},
-        upsert=True
-    )
+        upsert=True)
     print(f"[AutoGrade] exam={exam_id} "
           f"user={user_id[:8]} "
           f"obtained={obtained}/{total}")
@@ -1538,8 +1526,7 @@ def update_marks(exam_id, user_id):
             'checked_by':   session['user_id'],
             'checked_at':   utcnow()
         }},
-        upsert=True
-    )
+        upsert=True)
     return jsonify({'message': 'Marks saved'})
 
 
@@ -1568,8 +1555,7 @@ def publish_results(exam_id):
         rank       = i + 1
         percentile = (
             round((1 - (rank - 1) / n) * 100, 2)
-            if n else 0
-        )
+            if n else 0)
         results_col.update_one(
             {'exam_id': exam_id,
              'user_id': r['user_id']},
@@ -1585,13 +1571,11 @@ def publish_results(exam_id):
                 'published':    True,
                 'published_at': utcnow()
             }},
-            upsert=True
-        )
+            upsert=True)
         marks_col.update_one(
             {'exam_id': exam_id,
              'user_id': r['user_id']},
-            {'$set': {'published': True}}
-        )
+            {'$set': {'published': True}})
     socketio.emit('result_published',
                   {'exam_id': exam_id})
     return jsonify({'message':
@@ -1755,7 +1739,7 @@ def get_notifications():
 
 # ═══════════════════════════════════════════════════════════════════════════
 # AI GRADING
-# ═══════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════���══════════════════════════════════════
 def ai_grade(question, answer, marks,
              subject='General'):
     if not answer or not str(answer).strip():
@@ -1811,8 +1795,7 @@ def ai_grade(question, answer, marks,
                         'confidence', 'medium')),
                 'key_points': list(
                     result.get('key_points', [])),
-                'model': (
-                    'groq/llama-3.1-8b-instant')
+                'model':      'groq/llama-3.1-8b-instant'
             }
         except Exception as e:
             print(f"[AI Grade] Error: {e}")
@@ -1906,8 +1889,7 @@ def ai_grade_all(exam_id, user_id):
                 'ai_results':          results,
                 'ai_graded_at':        utcnow()
             }},
-            upsert=True
-        )
+            upsert=True)
         print(f"[AI Grade] ✅ "
               f"{len(results)} graded, "
               f"{skipped} MCQ skipped, "
@@ -2035,11 +2017,9 @@ def on_connect():
 
 @socketio.on('join_exam')
 def on_join(data):
-    join_room(
-        f"exam_{data.get('exam_id', '')}")
-    emit('joined', {
-        'room': f"exam_{data.get('exam_id', '')}"
-    })
+    room = f"exam_{data.get('exam_id', '')}"
+    join_room(room)
+    emit('joined', {'room': room})
 
 @socketio.on('leave_exam')
 def on_leave(data):
@@ -2069,29 +2049,26 @@ def static_images(filename):
 # ═══════════════════════════════════════════════════════════════════════════
 def print_banner():
     pdf_lib = (
-        'fitz'    if PYMUPDF_OK else
+        'PyMuPDF' if PYMUPDF_OK else
         'pypdf'   if PYPDF_OK   else
-        'NONE'
-    )
-    print("═" * 55)
-    print("  ExamPro — Shobhit University Gangoh")
-    print("  Team Believer © 2026")
-    print(f"  Async Mode : {ASYNC_MODE}")
-    print(f"  PDF Library: {pdf_lib}")
-    print(f"  AI Parse   : llama3-70b-8192")
-    print(f"  AI Grade   : llama-3.1-8b-instant")
-    print(f"  Faculty Key: {FACULTY_REG_KEY}")
-    print(f"  Production : {IS_PRODUCTION}")
-    print("═" * 55)
+        '❌ NONE')
+    print('═' * 56)
+    print('  ExamPro — SUG | Team Believer © 2026')
+    print(f'  Async Mode : {ASYNC_MODE}')
+    print(f'  PDF Lib    : {pdf_lib}')
+    print(f'  Groq AI    : '
+          f'{"✅ Ready" if GROQ_OK and GROQ_KEY else "⚠️  Missing key"}')
+    print(f'  Production : {IS_PRODUCTION}')
+    print('═' * 56)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     print_banner()
     port  = int(os.environ.get('PORT', 5000))
     debug = not IS_PRODUCTION
     socketio.run(
         app,
-        host  = '0.0.0.0',
-        port  = port,
-        debug = debug
+        host='0.0.0.0',
+        port=port,
+        debug=debug,
     )
