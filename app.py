@@ -1708,5 +1708,5 @@ if __name__ == '__main__':
     print("  URL          : http://127.0.0.1:5000")
     print("  Register     : http://127.0.0.1:5000/register")
     print("═" * 55)
-    socketio.run(app, debug=False,
-                 host='0.0.0.0', port=5000)
+  port = int(os.environ.get("PORT", 5000))
+socketio.run(app, debug=False, host="0.0.0.0", port=port)
