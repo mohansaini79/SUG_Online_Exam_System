@@ -80,7 +80,7 @@ bcrypt   = Bcrypt(app)
 socketio = SocketIO(
     app,
     cors_allowed_origins = '*',
-    async_mode          = 'eventlet',  # ★ Changed
+    async_mode          = 'threading',  # ★ Changed
     logger              = False,
     engineio_logger     = False
 )
@@ -1699,14 +1699,5 @@ def print_routes():
     print("==============\n")
 
 if __name__ == '__main__':
-    print_routes()
-    print("═" * 55)
-    print("  ExamPro — Shobhit University Gangoh (SUG)")
-    print("  Team Believer © 2026")
-    print(f"  Faculty Key  : {FACULTY_REG_KEY}")
-    print("  Roll Format  : 11 digits (e.g. 23014168001)")
-    print("  URL          : http://127.0.0.1:5000")
-    print("  Register     : http://127.0.0.1:5000/register")
-    print("═" * 55)
   port = int(os.environ.get("PORT", 5000))
 socketio.run(app, debug=False, host="0.0.0.0", port=port)
