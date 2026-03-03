@@ -882,7 +882,7 @@ JSON array only:"""
 
     try:
         resp = client_ai.chat.completions.create(
-            model       = 'llama3-70b-8192',
+            model       = 'llama-3.3-70b-versatile',
             messages    = [{'role':    'user',
                             'content': prompt}],
             temperature = 0.15,
@@ -987,7 +987,7 @@ def ai_generate_model_answers(
         )
         try:
             resp = client_ai.chat.completions.create(
-                model       = 'llama3-70b-8192',
+                model       = 'llama-3.3-70b-versatile',
                 messages    = [{'role':    'user',
                                 'content': prompt}],
                 temperature = 0.2,
